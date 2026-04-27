@@ -119,6 +119,22 @@ export default function BacktestDetailPage() {
               <dt className="muted">Alpha id</dt>
               <dd className="mono">{jobQ.data.alpha_id}</dd>
             </div>
+            {jobQ.data.alpha_name && (
+              <div>
+                <dt className="muted">Alpha name</dt>
+                <dd>{jobQ.data.alpha_name}</dd>
+              </div>
+            )}
+            {jobQ.data.index_code && (
+              <div>
+                <dt className="muted">Index</dt>
+                <dd className="mono">{jobQ.data.index_code}</dd>
+              </div>
+            )}
+            <div>
+              <dt className="muted">Include test period in results</dt>
+              <dd>{jobQ.data.include_test_period_in_results ? 'Yes' : 'No (tune window only)'}</dd>
+            </div>
             <div>
               <dt className="muted">Created</dt>
               <dd>{new Date(jobQ.data.created_at).toLocaleString()}</dd>

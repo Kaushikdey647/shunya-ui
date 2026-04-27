@@ -5,6 +5,10 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -13,7 +17,11 @@ import {
   YAxis,
 } from 'recharts'
 import { getDataDashboard } from '../api/endpoints'
-import type { DashboardBucketParam, TickerDashboardRow } from '../api/types'
+import type {
+  ClassificationLabelCount,
+  DashboardBucketParam,
+  TickerDashboardRow,
+} from '../api/types'
 import ApiErrorAlert from '../components/ApiErrorAlert'
 
 const INTERVAL_OPTIONS = [
@@ -44,6 +52,36 @@ type SortKey =
   | 'raw_bar_count'
 
 const chartAxisStyle = { fontSize: 11, fill: 'var(--text-muted)' }
+
+const PIE_PALETTE = [
+  'var(--accent)',
+  'var(--accent-muted)',
+  'var(--success)',
+  'var(--border-strong)',
+  'var(--text-muted)',
+  '#7c9cbf',
+  '#9b8dc9',
+  '#c98d8d',
+  '#8dc9a8',
+  '#c9b38d',
+  '#8db4c9',
+  '#b0b0b0',
+]
+
+function collapseClassificationCounts(
+  counts: ClassificationLabelCount[],
+  maxSlices = 12,
+): { name: string; value: number }[] {
+  if (!counts.length) return []
+  const sorted = [...counts].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+  if (sorted.length <= maxSlices) {
+    return sorted.map((c) => ({ name: c.label, value: c.count }))
+  }
+  const head = sorted.slice(0, maxSlices - 1)
+  const tail = sorted.slice(maxSlices - 1)
+  const otherSum = tail.reduce((s, x) => s + x.count, 0)
+  return [...head.map((c) => ({ name: c.label, value: c.count })), { name: 'Other', value: otherSum }]
+}
 
 function formatPct(n: number | null | undefined, digits = 2): string {
   if (n == null || Number.isNaN(n)) return '—'
@@ -204,6 +242,18 @@ export default function DataSummaryPage() {
             <strong>{data.bar_step}</strong> (~{data.periods_per_year.toFixed(0)} periods/year).
           </p>
 
+          <section className="stack" style={{ gap: '0.75rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1.05rem' }}>Classifications</h2>
+            <p className="muted" style={{ fontSize: '0.8125rem', margin: 0 }}>
+              Ticker counts by latest yfinance classification row per symbol (same universe as the heatmap).
+            </p>
+            <div className="dashboard-chart-grid">
+              <ClassificationPiePanel title="Sector" counts={data.sector_counts ?? []} />
+              <ClassificationPiePanel title="Industry" counts={data.industry_counts ?? []} />
+              <ClassificationPiePanel title="Sub-industry" counts={data.sub_industry_counts ?? []} />
+            </div>
+          </section>
+
           <div className="dashboard-chart-grid">
             <div className="table-wrap dashboard-chart-panel">
               <div className="dashboard-chart-title">Risk vs return</div>
@@ -350,6 +400,74 @@ export default function DataSummaryPage() {
           </section>
         </>
       )}
+    </div>
+  )
+}
+
+function ClassificationPiePanel({
+  title,
+  counts,
+}: {
+  title: string
+  counts: ClassificationLabelCount[]
+}) {
+  const pieData = useMemo(() => collapseClassificationCounts(counts), [counts])
+  const total = useMemo(() => pieData.reduce((s, x) => s + x.value, 0), [pieData])
+
+  if (!pieData.length) {
+    return (
+      <div className="table-wrap dashboard-chart-panel">
+        <div className="dashboard-chart-title">{title}</div>
+        <p className="muted" style={{ padding: '1rem', margin: 0, fontSize: '0.875rem' }}>
+          No classification rows for this universe.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="table-wrap dashboard-chart-panel">
+      <div className="dashboard-chart-title">{title}</div>
+      <div style={{ width: '100%', height: 260 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+            <Pie
+              data={pieData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={78}
+              paddingAngle={1}
+              stroke="var(--border)"
+              strokeWidth={1}
+              isAnimationActive={false}
+            >
+              {pieData.map((entry, i) => (
+                <Cell key={`${entry.name}-${i}`} fill={PIE_PALETTE[i % PIE_PALETTE.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={{
+                background: 'var(--surface-panel)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                color: 'var(--text)',
+                fontSize: '0.8125rem',
+              }}
+              formatter={(value: number) =>
+                total > 0
+                  ? [`${value} (${((value / total) * 100).toFixed(1)}%)`, 'Tickers']
+                  : [`${value}`, 'Tickers']
+              }
+            />
+            <Legend
+              wrapperStyle={{ fontSize: '0.72rem' }}
+              formatter={(value) => <span style={{ color: 'var(--text-muted)' }}>{value}</span>}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   )
 }

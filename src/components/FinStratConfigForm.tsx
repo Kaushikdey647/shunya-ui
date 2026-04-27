@@ -11,10 +11,21 @@ export type FinStratFormValues = {
   intraday_session_isolated_lag: boolean
   nan_policy: 'strict' | 'zero_fill'
   temporal_mode: 'bar_step' | 'elapsed_trading_time'
-  neutralization: 'none' | 'market' | 'group'
+  neutralization: 'none' | 'market' | 'sector' | 'industry'
   truncation: string
   max_single_weight_str: string
   panel_columns_str: string
+}
+
+function coalesceNeutralizationForForm(
+  n: FinStratConfig['neutralization'] | undefined,
+): FinStratFormValues['neutralization'] {
+  const raw = n as string | undefined
+  if (raw === 'group') return 'sector'
+  if (raw === 'none' || raw === 'market' || raw === 'sector' || raw === 'industry') {
+    return raw
+  }
+  return 'market'
 }
 
 function toForm(c: FinStratConfig): FinStratFormValues {
@@ -26,7 +37,7 @@ function toForm(c: FinStratConfig): FinStratFormValues {
     intraday_session_isolated_lag: c.intraday_session_isolated_lag ?? false,
     nan_policy: c.nan_policy ?? 'strict',
     temporal_mode: c.temporal_mode ?? 'bar_step',
-    neutralization: c.neutralization ?? 'market',
+    neutralization: coalesceNeutralizationForForm(c.neutralization),
     truncation: String(c.truncation ?? 0),
     max_single_weight_str:
       c.max_single_weight != null && !Number.isNaN(c.max_single_weight)
@@ -194,9 +205,10 @@ export default function FinStratConfigForm({
       <label>
         Neutralization
         <select {...form.register('neutralization')}>
-          <option value="none">none</option>
-          <option value="market">market</option>
-          <option value="group">group</option>
+          <option value="none">None</option>
+          <option value="market">Market</option>
+          <option value="sector">Sector</option>
+          <option value="industry">Industry</option>
         </select>
       </label>
       <label>

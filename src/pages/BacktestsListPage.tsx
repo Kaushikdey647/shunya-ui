@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { listBacktests } from '../api/endpoints'
+import { listAlphas, listBacktests } from '../api/endpoints'
 import type { BacktestJobStatus } from '../api/types'
 import ApiErrorAlert from '../components/ApiErrorAlert'
 
@@ -16,42 +16,57 @@ const STATUS_OPTIONS: (BacktestJobStatus | '')[] = [
 export default function BacktestsListPage() {
   const [limit, setLimit] = useState(50)
   const [offset, setOffset] = useState(0)
-  const [alphaId, setAlphaId] = useState('')
+  const [alphaIdFilter, setAlphaIdFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState<BacktestJobStatus | ''>('')
 
+  const alphasQ = useQuery({
+    queryKey: ['alphas', 'for-filter'],
+    queryFn: () => listAlphas({ limit: 500, offset: 0 }),
+  })
+
+  const alphaFilterParam = useMemo(() => {
+    return alphaIdFilter.trim() || null
+  }, [alphaIdFilter])
+
   const q = useQuery({
-    queryKey: ['backtests', limit, offset, alphaId, statusFilter],
+    queryKey: ['backtests', limit, offset, alphaFilterParam, statusFilter],
     queryFn: () =>
       listBacktests({
         limit,
         offset,
-        alpha_id: alphaId.trim() || null,
+        alpha_id: alphaFilterParam,
         status: statusFilter || null,
       }),
   })
 
   return (
     <div className="page-inner stack">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>Backtests</h1>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ margin: 0 }}>Backtests</h1>
         <Link to="/backtests/new" className="btn btn-primary">
           New backtest
         </Link>
       </div>
 
-      <div className="row">
+      <div className="row" style={{ flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end' }}>
         <label>
-          Alpha id (optional)
-          <input
-            type="text"
-            value={alphaId}
+          Alpha
+          <select
+            value={alphaIdFilter}
             onChange={(e) => {
-              setAlphaId(e.target.value)
+              setAlphaIdFilter(e.target.value)
               setOffset(0)
             }}
-            className="mono"
             style={{ minWidth: '14rem' }}
-          />
+            disabled={alphasQ.isLoading}
+          >
+            <option value="">All alphas</option>
+            {(alphasQ.data ?? []).map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
         </label>
         <label>
           Status
@@ -122,6 +137,7 @@ export default function BacktestsListPage() {
                 <th>Status</th>
                 <th>Job ID</th>
                 <th>Alpha</th>
+                <th>Index</th>
                 <th>Created</th>
               </tr>
             </thead>
@@ -134,7 +150,8 @@ export default function BacktestsListPage() {
                       {j.id}
                     </Link>
                   </td>
-                  <td className="mono">{j.alpha_id}</td>
+                  <td>{j.alpha_name ?? <span className="muted mono">{j.alpha_id}</span>}</td>
+                  <td className="mono">{j.index_code ?? '—'}</td>
                   <td>{new Date(j.created_at).toLocaleString()}</td>
                 </tr>
               ))}

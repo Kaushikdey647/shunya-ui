@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { ApiError } from '../api/client'
 import { deleteAlpha, getAlpha, patchAlpha } from '../api/endpoints'
 import { defaultFinStratConfig } from '../api/defaultConfigs'
-import type { FinStratConfig } from '../api/types'
+import type { FinStratConfig, Neutralization } from '../api/types'
 import { DEFAULT_ALPHA_SOURCE } from '../alphaEditor/defaults'
 import ApiErrorAlert from '../components/ApiErrorAlert'
 import AlphaSourceEditor from '../components/AlphaSourceEditor'
@@ -27,11 +27,22 @@ const detailsSchema = z.object({
 
 type DetailsForm = z.infer<typeof detailsSchema>
 
+function normalizeNeutralization(value: unknown): Neutralization | undefined {
+  if (value === 'group') return 'sector'
+  if (value === 'none' || value === 'market' || value === 'sector' || value === 'industry') {
+    return value
+  }
+  return undefined
+}
+
 function finstratFromServer(raw: Record<string, unknown> | null | undefined): FinStratConfig {
   if (!raw || typeof raw !== 'object') {
     return { ...defaultFinStratConfig }
   }
-  return { ...defaultFinStratConfig, ...raw } as FinStratConfig
+  const merged: FinStratConfig = { ...defaultFinStratConfig, ...(raw as FinStratConfig) }
+  const n = normalizeNeutralization(raw.neutralization)
+  if (n !== undefined) merged.neutralization = n
+  return merged
 }
 
 export default function AlphaDetailPage() {

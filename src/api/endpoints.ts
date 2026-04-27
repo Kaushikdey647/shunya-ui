@@ -13,10 +13,15 @@ import type {
   HealthResponse,
   InstrumentOhlcvResponse,
   InstrumentSearchResponse,
+  EquityIndexOut,
 } from './types'
 
 export async function getHealth(): Promise<HealthResponse> {
   return apiFetch<HealthResponse>('/health', { method: 'GET' })
+}
+
+export async function listEquityIndices(): Promise<EquityIndexOut[]> {
+  return apiFetch<EquityIndexOut[]>('/indices', { method: 'GET' })
 }
 
 export async function listAlphas(params: {

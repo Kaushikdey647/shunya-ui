@@ -13,7 +13,7 @@ export type MarketDataProvider = 'auto' | 'timescale' | 'yfinance'
 export type DecayMode = 'ema' | 'linear'
 export type NanPolicy = 'strict' | 'zero_fill'
 export type TemporalMode = 'bar_step' | 'elapsed_trading_time'
-export type Neutralization = 'none' | 'market' | 'group'
+export type Neutralization = 'none' | 'market' | 'sector' | 'industry'
 export type SectorCapMode = 'rescale' | 'raise'
 export type ConstraintsMode = 'rescale' | 'raise'
 
@@ -96,12 +96,28 @@ export interface AlphaOut {
   updated_at: string
 }
 
+export interface EquityIndexOut {
+  code: string
+  display_name: string
+  member_count: number
+  /** Yahoo-style raw index symbol (e.g. ^GSPC). */
+  benchmark_ticker: string
+}
+
 export interface BacktestCreate {
   alpha_id: string
+  /** When set, server resolves constituents from Timescale and sets raw index benchmark ticker. */
+  index_code?: string | null
   fin_ts: FinTsRequest
   finstrat_override?: FinStratConfig | null
   finbt?: FinBtConfig
   benchmark_ticker?: string | null
+  /** When true, result metrics and series include the test window from 2025-01-01 onward. */
+  include_test_period_in_results?: boolean
+  /**
+   * When true with index_code: drop constituents with no OHLCV in the window; benchmark must still have bars.
+   */
+  omit_index_members_missing_ohlcv?: boolean
 }
 
 export type BacktestJobStatus = 'queued' | 'running' | 'succeeded' | 'failed'
@@ -109,6 +125,9 @@ export type BacktestJobStatus = 'queued' | 'running' | 'succeeded' | 'failed'
 export interface BacktestJobOut {
   id: string
   alpha_id: string
+  alpha_name?: string | null
+  index_code?: string | null
+  include_test_period_in_results?: boolean
   status: BacktestJobStatus
   error_message: string | null
   result_summary: Record<string, unknown> | null
@@ -171,6 +190,11 @@ export interface TickerDashboardRow extends TickerRiskRow {
   coverage: number[]
 }
 
+export interface ClassificationLabelCount {
+  label: string
+  count: number
+}
+
 export interface DataDashboardResponse {
   interval: string
   source: string
@@ -191,6 +215,9 @@ export interface DataDashboardResponse {
   bar_step: number
   periods_per_year: number
   max_buckets: number
+  sector_counts: ClassificationLabelCount[]
+  industry_counts: ClassificationLabelCount[]
+  sub_industry_counts: ClassificationLabelCount[]
 }
 
 export type HealthComponentStatus = 'ok' | 'error'

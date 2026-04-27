@@ -1,7 +1,12 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { enqueueBacktest } from '../api/endpoints'
+import {
+  BACKTEST_SIM_END_EXCLUSIVE,
+  BACKTEST_SIM_START,
+  BACKTEST_TEST_START,
+} from '../api/backtestWindows'
+import { enqueueBacktest, listAlphas, listEquityIndices } from '../api/endpoints'
 import { defaultFinBtConfig, defaultFinTsRequest } from '../api/defaultConfigs'
 import type { FinBtConfig, FinStratConfig, FinTsRequest } from '../api/types'
 import FinTsAdvancedSection from '../components/FinTsAdvancedSection'
@@ -11,21 +16,25 @@ import {
   type FinTsAdvancedState,
 } from '../finTs/advancedState'
 import ApiErrorAlert from '../components/ApiErrorAlert'
-import { parseTickerList } from '../utils/tickers'
+
+function initialAdvForIndexBacktest(): FinTsAdvancedState {
+  const s = initialFinTsAdvancedState()
+  s.marketDataProvider = 'timescale'
+  s.attachYf = false
+  s.attachFund = false
+  return s
+}
 
 export default function BacktestNewPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
 
   const [alphaId, setAlphaId] = useState('')
-  const [tickers, setTickers] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [benchmarkTicker, setBenchmarkTicker] = useState('')
+  const [indexCode, setIndexCode] = useState('')
+  const [includeTestInResults, setIncludeTestInResults] = useState(false)
+  const [omitMembersMissingOhlcv, setOmitMembersMissingOhlcv] = useState(true)
 
-  const [finTsAdv, setFinTsAdv] = useState<FinTsAdvancedState>(() =>
-    initialFinTsAdvancedState(),
-  )
+  const [finTsAdv, setFinTsAdv] = useState<FinTsAdvancedState>(initialAdvForIndexBacktest)
 
   const [finstratOverrideJson, setFinstratOverrideJson] = useState('')
   const [finbtCash, setFinbtCash] = useState(String(defaultFinBtConfig.cash))
@@ -42,19 +51,46 @@ export default function BacktestNewPage() {
     defaultFinBtConfig.validate_finite_targets ?? true,
   )
 
+  const alphasQ = useQuery({
+    queryKey: ['alphas', 'all-for-backtest'],
+    queryFn: () => listAlphas({ limit: 500, offset: 0 }),
+  })
+
+  const indicesQ = useQuery({
+    queryKey: ['equity-indices'],
+    queryFn: () => listEquityIndices(),
+  })
+
+  const indicesWithMembers = useMemo(
+    () => (indicesQ.data ?? []).filter((ix) => ix.member_count > 0),
+    [indicesQ.data],
+  )
+
+  useEffect(() => {
+    if (!indexCode || !indicesWithMembers.length) return
+    if (!indicesWithMembers.some((x) => x.code === indexCode)) setIndexCode('')
+  }, [indexCode, indicesWithMembers])
+
+  const selectedBenchmark = useMemo(() => {
+    if (!indexCode || !indicesQ.data) return null
+    const row = indicesQ.data.find((x) => x.code === indexCode)
+    return row?.benchmark_ticker ?? null
+  }, [indexCode, indicesQ.data])
+
   const mutation = useMutation({
     mutationFn: () => {
-      const ticker_list = parseTickerList(tickers)
-      if (!alphaId.trim()) throw new Error('Alpha id is required.')
-      if (!startDate || !endDate) throw new Error('Start and end dates are required.')
-      if (ticker_list.length === 0) throw new Error('At least one ticker is required.')
+      if (!alphaId.trim()) throw new Error('Select an alpha.')
+      if (!indexCode.trim()) throw new Error('Select an index.')
 
       const fin_ts: FinTsRequest = defaultFinTsRequest({
-        start_date: startDate,
-        end_date: endDate,
-        ticker_list,
+        start_date: BACKTEST_SIM_START,
+        end_date: BACKTEST_SIM_END_EXCLUSIVE,
+        ticker_list: [],
       })
       applyFinTsAdvanced(fin_ts, finTsAdv)
+      fin_ts.market_data_provider = 'timescale'
+      fin_ts.attach_yfinance_classifications = false
+      fin_ts.attach_fundamentals = false
 
       let finstrat_override: FinStratConfig | undefined
       const o = finstratOverrideJson.trim()
@@ -77,10 +113,12 @@ export default function BacktestNewPage() {
 
       return enqueueBacktest({
         alpha_id: alphaId.trim(),
+        index_code: indexCode.trim(),
         fin_ts,
         finstrat_override,
         finbt,
-        benchmark_ticker: benchmarkTicker.trim() || undefined,
+        include_test_period_in_results: includeTestInResults,
+        omit_index_members_missing_ohlcv: omitMembersMissingOhlcv,
       })
     },
     onSuccess: (job) => {
@@ -108,55 +146,114 @@ export default function BacktestNewPage() {
         }}
       >
         <label>
-          Alpha id
-          <input
-            type="text"
+          Alpha
+          <select
             value={alphaId}
             onChange={(e) => setAlphaId(e.target.value)}
-            className="mono"
             required
-          />
-        </label>
-        <label>
-          Tickers (comma-separated)
-          <input
-            type="text"
-            value={tickers}
-            onChange={(e) => setTickers(e.target.value)}
-            placeholder="AAPL, MSFT"
-            required
-          />
-        </label>
-        <label>
-          Start date
-          <input
-            type="text"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            placeholder="YYYY-MM-DD"
-            required
-          />
-        </label>
-        <label>
-          End date
-          <input
-            type="text"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            placeholder="YYYY-MM-DD"
-            required
-          />
-        </label>
-        <label>
-          Benchmark ticker (optional)
-          <input
-            type="text"
-            value={benchmarkTicker}
-            onChange={(e) => setBenchmarkTicker(e.target.value)}
-          />
+            disabled={alphasQ.isLoading || !alphasQ.data?.length}
+          >
+            <option value="">
+              {alphasQ.isLoading ? 'Loading…' : alphasQ.data?.length ? 'Select…' : 'No alphas'}
+            </option>
+            {(alphasQ.data ?? []).map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
         </label>
 
-        <FinTsAdvancedSection state={finTsAdv} setState={setFinTsAdv} />
+        <label>
+          Index universe
+          <select
+            value={indexCode}
+            onChange={(e) => setIndexCode(e.target.value)}
+            required
+            disabled={indicesQ.isLoading || !indicesWithMembers.length}
+          >
+            <option value="">
+              {indicesQ.isLoading
+                ? 'Loading…'
+                : indicesWithMembers.length
+                  ? 'Select…'
+                  : indicesQ.data?.length
+                    ? 'No index has members yet (sync memberships)'
+                    : 'No indices (run DB migrations)'}
+            </option>
+            {indicesWithMembers.map((ix) => (
+              <option key={ix.code} value={ix.code}>
+                {ix.display_name} ({ix.member_count} members)
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {!indicesQ.isLoading &&
+          indicesQ.data &&
+          indicesQ.data.length > 0 &&
+          indicesWithMembers.length === 0 && (
+            <p className="muted" style={{ margin: 0 }}>
+              Timescale has index catalog rows but no <code className="mono">symbol_index_membership</code>{' '}
+              data. From the repo:{' '}
+              <code className="mono">shunya-timescale sync-index-memberships</code> (or run{' '}
+              <code className="mono">scripts/bootstrap_sp500_ohlcv.py</code>
+              ), then refresh this page.
+            </p>
+          )}
+
+        {selectedBenchmark && (
+          <p className="muted" style={{ margin: 0 }}>
+            Benchmark index (raw ticker): <span className="mono">{selectedBenchmark}</span>
+          </p>
+        )}
+
+        <div className="muted stack" style={{ gap: '0.35rem' }}>
+          <p style={{ margin: 0 }}>
+            <strong>Tune</strong> window:{' '}
+            <span className="mono">
+              {BACKTEST_SIM_START}
+            </span>{' '}
+            –{' '}
+            <span className="mono">{BACKTEST_TEST_START}</span> (end exclusive).{' '}
+            <strong>Test</strong> window:{' '}
+            <span className="mono">{BACKTEST_TEST_START}</span> –{' '}
+            <span className="mono">{BACKTEST_SIM_END_EXCLUSIVE}</span> (end exclusive).
+          </p>
+          <p style={{ margin: 0 }}>
+            Simulation always uses <strong>daily</strong> bars over{' '}
+            <span className="mono">{BACKTEST_SIM_START}</span> through the last bar before{' '}
+            <span className="mono">{BACKTEST_SIM_END_EXCLUSIVE}</span> (same range the server
+            enforces).
+          </p>
+        </div>
+
+        <label className="row">
+          <input
+            type="checkbox"
+            checked={includeTestInResults}
+            onChange={(e) => setIncludeTestInResults(e.target.checked)}
+          />
+          Include test period ({BACKTEST_TEST_START.slice(0, 4)}–
+          {BACKTEST_SIM_END_EXCLUSIVE.slice(0, 4)}) in results
+        </label>
+
+        <label className="row">
+          <input
+            type="checkbox"
+            checked={omitMembersMissingOhlcv}
+            onChange={(e) => setOmitMembersMissingOhlcv(e.target.checked)}
+          />
+          Skip index members with no OHLCV in the simulation window (benchmark ticker must still
+          have data in Timescale)
+        </label>
+
+        <FinTsAdvancedSection
+          state={finTsAdv}
+          setState={setFinTsAdv}
+          timescaleOnly
+          hideBarSpec
+        />
 
         <details className="advanced">
           <summary>Advanced (overrides, finbt)</summary>
