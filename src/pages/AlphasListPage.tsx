@@ -14,7 +14,7 @@ export default function AlphasListPage() {
   })
 
   return (
-    <div className="stack">
+    <div className="page-inner stack">
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <h1>Alphas</h1>
         <Link to="/alphas/new" className="btn btn-primary">

@@ -90,7 +90,7 @@ export default function BacktestNewPage() {
   })
 
   return (
-    <div className="stack">
+    <div className="page-inner stack">
       <div className="row">
         <Link to="/backtests" className="btn">
           ← Backtests

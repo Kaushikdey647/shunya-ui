@@ -1,4 +1,5 @@
-import { NavLink, Outlet, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
+import AppShell from './components/AppShell'
 import './layout.css'
 import AlphaDetailPage from './pages/AlphaDetailPage'
 import AlphaNewPage from './pages/AlphaNewPage'
@@ -8,33 +9,16 @@ import BacktestNewPage from './pages/BacktestNewPage'
 import BacktestsListPage from './pages/BacktestsListPage'
 import DataSummaryPage from './pages/DataSummaryPage'
 import HomePage from './pages/HomePage'
-
-function Layout() {
-  return (
-    <div className="app">
-      <header className="app-header">
-        <nav>
-          <span className="app-title">shunya-ui</span>
-          <NavLink to="/" end>
-            Home
-          </NavLink>
-          <NavLink to="/alphas">Alphas</NavLink>
-          <NavLink to="/backtests">Backtests</NavLink>
-          <NavLink to="/data">Data</NavLink>
-        </nav>
-      </header>
-      <main className="app-main">
-        <Outlet />
-      </main>
-    </div>
-  )
-}
+import InstrumentDetailPage from './pages/InstrumentDetailPage'
+import SearchResultsPage from './pages/SearchResultsPage'
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Layout />}>
+      <Route path="/" element={<AppShell />}>
         <Route index element={<HomePage />} />
+        <Route path="search" element={<SearchResultsPage />} />
+        <Route path="instruments/:symbol" element={<InstrumentDetailPage />} />
         <Route path="alphas" element={<AlphasListPage />} />
         <Route path="alphas/new" element={<AlphaNewPage />} />
         <Route path="alphas/:alphaId" element={<AlphaDetailPage />} />

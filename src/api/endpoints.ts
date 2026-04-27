@@ -9,6 +9,8 @@ import type {
   DataSummaryRequest,
   DataSummaryResponse,
   HealthResponse,
+  InstrumentOhlcvResponse,
+  InstrumentSearchResponse,
 } from './types'
 
 export async function getHealth(): Promise<HealthResponse> {
@@ -103,4 +105,25 @@ export async function postDataSummary(
     method: 'POST',
     body: JSON.stringify(body),
   })
+}
+
+export async function searchInstruments(q: string): Promise<InstrumentSearchResponse> {
+  const qs = new URLSearchParams({ q })
+  return apiFetch<InstrumentSearchResponse>(`/instruments/search?${qs.toString()}`, {
+    method: 'GET',
+  })
+}
+
+export async function getInstrumentOhlcv(
+  symbol: string,
+  params: { interval: string; period: string },
+): Promise<InstrumentOhlcvResponse> {
+  const qs = new URLSearchParams({
+    interval: params.interval,
+    period: params.period,
+  })
+  return apiFetch<InstrumentOhlcvResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/ohlcv?${qs.toString()}`,
+    { method: 'GET' },
+  )
 }

@@ -102,11 +102,15 @@ export default function AlphaDetailPage() {
   })
 
   if (!alphaId) {
-    return <p className="muted">Missing alpha id.</p>
+    return (
+      <div className="page-inner">
+        <p className="muted">Missing alpha id.</p>
+      </div>
+    )
   }
 
   return (
-    <div className="stack">
+    <div className="page-inner stack">
       <div className="row">
         <Link to="/alphas" className="btn">
           ← Alphas

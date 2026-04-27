@@ -86,11 +86,15 @@ export default function BacktestDetailPage() {
   })
 
   if (!jobId) {
-    return <p className="muted">Missing job id.</p>
+    return (
+      <div className="page-inner">
+        <p className="muted">Missing job id.</p>
+      </div>
+    )
   }
 
   return (
-    <div className="stack">
+    <div className="page-inner stack">
       <div className="row">
         <Link to="/backtests" className="btn">
           ← Backtests

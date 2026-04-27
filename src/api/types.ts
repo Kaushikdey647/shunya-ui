@@ -148,6 +148,68 @@ export interface DataSummaryResponse {
   periods_per_year: number
 }
 
+export type HealthComponentStatus = 'ok' | 'error'
+
+export type OverallHealthStatus = 'ok' | 'degraded' | 'error'
+
+export interface HealthCheckItem {
+  status: HealthComponentStatus
+  latency_ms: number
+}
+
 export interface HealthResponse {
-  status: string
+  status: OverallHealthStatus
+  backend: HealthCheckItem
+  database: HealthCheckItem
+  yfinance: HealthCheckItem
+}
+
+export interface InstrumentSearchQuote {
+  symbol: string
+  shortname?: string | null
+  longname?: string | null
+  exchange?: string | null
+  quote_type?: string | null
+}
+
+export interface InstrumentSearchNewsItem {
+  title: string
+  link?: string | null
+  publisher?: string | null
+}
+
+export interface InstrumentNavLink {
+  title: string
+  url: string
+}
+
+export interface InstrumentSearchResponse {
+  quotes: InstrumentSearchQuote[]
+  news: InstrumentSearchNewsItem[]
+  nav_links: InstrumentNavLink[]
+}
+
+export interface OhlcvBar {
+  time: string
+  open: number
+  high: number
+  low: number
+  close: number
+  volume?: number | null
+}
+
+export type InstrumentOhlcvDataSource = 'timescale' | 'yfinance'
+
+export type InstrumentOhlcvStorageStatus = 'none' | 'ok' | 'failed' | 'deferred'
+
+export interface InstrumentOhlcvResponse {
+  symbol: string
+  interval: string
+  period: string
+  bars: OhlcvBar[]
+  data_source?: InstrumentOhlcvDataSource
+  storage_status?: InstrumentOhlcvStorageStatus
+  storage_error?: string | null
+  storage_job_id?: number | null
+  storage_skipped?: boolean
 }

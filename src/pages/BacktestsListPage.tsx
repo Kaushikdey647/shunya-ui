@@ -31,7 +31,7 @@ export default function BacktestsListPage() {
   })
 
   return (
-    <div className="stack">
+    <div className="page-inner stack">
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <h1>Backtests</h1>
         <Link to="/backtests/new" className="btn btn-primary">

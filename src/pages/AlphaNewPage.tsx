@@ -72,7 +72,7 @@ export default function AlphaNewPage() {
   })
 
   return (
-    <div className="stack">
+    <div className="page-inner stack">
       <div className="row">
         <Link to="/alphas" className="btn">
           ← Alphas

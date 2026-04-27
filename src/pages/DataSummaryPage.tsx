@@ -55,7 +55,7 @@ export default function DataSummaryPage() {
   })
 
   return (
-    <div className="stack">
+    <div className="page-inner stack">
       <div className="row">
         <Link to="/" className="btn">
           ← Home
