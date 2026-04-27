@@ -71,7 +71,9 @@ export interface FinBtConfig {
 export interface AlphaCreate {
   name: string
   description?: string | null
-  import_ref: string
+  /** When set, takes precedence at backtest time. Either this or `import_ref` (or both). */
+  source_code?: string | null
+  import_ref?: string | null
   finstrat_config: FinStratConfig
 }
 
@@ -79,6 +81,7 @@ export interface AlphaPatch {
   name?: string | null
   description?: string | null
   import_ref?: string | null
+  source_code?: string | null
   finstrat_config?: FinStratConfig | null
 }
 
@@ -86,7 +89,8 @@ export interface AlphaOut {
   id: string
   name: string
   description: string | null
-  import_ref: string
+  import_ref: string | null
+  source_code: string | null
   finstrat_config: Record<string, unknown>
   created_at: string
   updated_at: string
@@ -146,6 +150,47 @@ export interface DataSummaryResponse {
   bar_unit: string
   bar_step: number
   periods_per_year: number
+}
+
+export type DashboardBucketGranularity = 'day' | 'week' | 'month'
+
+export type DashboardBucketParam = 'auto' | DashboardBucketGranularity
+
+export interface DashboardBucketMeta {
+  index: number
+  start: string
+  end: string
+}
+
+export interface TickerDashboardRow extends TickerRiskRow {
+  first_ts: string | null
+  last_ts: string | null
+  raw_bar_count: number
+  completeness_pct: number
+  longest_run_buckets: number
+  coverage: number[]
+}
+
+export interface DataDashboardResponse {
+  interval: string
+  source: string
+  bucket_granularity: DashboardBucketGranularity
+  bucket_auto_subsampled: boolean
+  reference_start: string
+  reference_end: string
+  bucket_count: number
+  ticker_count: number
+  truncated: boolean
+  aggregate_mean_completeness_pct: number
+  aggregate_median_completeness_pct: number
+  completeness_histogram: number[]
+  buckets: DashboardBucketMeta[]
+  tickers: TickerDashboardRow[]
+  per_ticker_metrics: TickerRiskRow[]
+  bar_unit: string
+  bar_step: number
+  periods_per_year: number
+  max_buckets: number
 }
 
 export type HealthComponentStatus = 'ok' | 'error'

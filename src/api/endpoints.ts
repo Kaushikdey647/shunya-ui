@@ -6,6 +6,8 @@ import type {
   BacktestCreate,
   BacktestJobOut,
   BacktestResultPayload,
+  DashboardBucketParam,
+  DataDashboardResponse,
   DataSummaryRequest,
   DataSummaryResponse,
   HealthResponse,
@@ -104,6 +106,23 @@ export async function postDataSummary(
   return apiFetch<DataSummaryResponse>('/data', {
     method: 'POST',
     body: JSON.stringify(body),
+  })
+}
+
+export async function getDataDashboard(params: {
+  interval?: string
+  source?: string
+  bucket?: DashboardBucketParam
+  max_buckets?: number
+}): Promise<DataDashboardResponse> {
+  const sp = new URLSearchParams()
+  if (params.interval != null) sp.set('interval', params.interval)
+  if (params.source != null) sp.set('source', params.source)
+  if (params.bucket != null) sp.set('bucket', params.bucket)
+  if (params.max_buckets != null) sp.set('max_buckets', String(params.max_buckets))
+  const q = sp.toString()
+  return apiFetch<DataDashboardResponse>(`/data/dashboard${q ? `?${q}` : ''}`, {
+    method: 'GET',
   })
 }
 
