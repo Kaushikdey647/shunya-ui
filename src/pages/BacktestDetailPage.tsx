@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getBacktest, getBacktestResult } from '../api/endpoints'
 import ApiErrorAlert from '../components/ApiErrorAlert'
+import BacktestResultCharts from '../components/BacktestResultCharts'
 
 const TABLE_PREVIEW = 100
 
@@ -154,7 +155,20 @@ export default function BacktestDetailPage() {
             {jobQ.data.error_message && (
               <div>
                 <dt className="muted">Error</dt>
-                <dd className="alert alert-error">{jobQ.data.error_message}</dd>
+                <dd className="alert alert-error" style={{ margin: 0 }}>
+                  <pre
+                    className="mono"
+                    style={{
+                      whiteSpace: 'pre-wrap',
+                      margin: 0,
+                      maxHeight: '28rem',
+                      overflow: 'auto',
+                      fontSize: '0.8125rem',
+                    }}
+                  >
+                    {jobQ.data.error_message}
+                  </pre>
+                </dd>
               </div>
             )}
             {jobQ.data.result_summary && (
@@ -189,6 +203,8 @@ export default function BacktestDetailPage() {
               )}
               {resultQ.data && !rawJson && (
                 <>
+                  <h3>Overview</h3>
+                  <BacktestResultCharts data={resultQ.data} />
                   <h3>Metrics</h3>
                   <div className="table-wrap">
                     <table className="data">
@@ -202,17 +218,9 @@ export default function BacktestDetailPage() {
                       </tbody>
                     </table>
                   </div>
-                  {resultQ.data.benchmark != null && (
-                    <>
-                      <h3>Benchmark</h3>
-                      <pre className="mono" style={{ whiteSpace: 'pre-wrap' }}>
-                        {JSON.stringify(resultQ.data.benchmark, null, 2)}
-                      </pre>
-                    </>
-                  )}
-                  <h3>Equity curve</h3>
+                  <h3>Equity curve (table)</h3>
                   <RowTable rows={resultQ.data.equity_curve} />
-                  <h3>Turnover history</h3>
+                  <h3>Turnover history (table)</h3>
                   <RowTable rows={resultQ.data.turnover_history} />
                 </>
               )}

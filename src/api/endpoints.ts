@@ -13,6 +13,7 @@ import type {
   HealthResponse,
   InstrumentOhlcvResponse,
   InstrumentSearchResponse,
+  InstrumentTickerNewsResponse,
   EquityIndexOut,
 } from './types'
 
@@ -81,6 +82,21 @@ export async function listBacktests(params: {
   })
 }
 
+export async function deleteBacktest(jobId: string): Promise<void> {
+  await apiFetch<void>(`/backtests/${encodeURIComponent(jobId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function deleteBacktestsBatch(
+  ids: string[],
+): Promise<{ deleted: number }> {
+  return apiFetch<{ deleted: number }>('/backtests/delete-batch', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  })
+}
+
 export async function getBacktest(jobId: string): Promise<BacktestJobOut> {
   return apiFetch<BacktestJobOut>(`/backtests/${encodeURIComponent(jobId)}`, {
     method: 'GET',
@@ -136,6 +152,19 @@ export async function searchInstruments(q: string): Promise<InstrumentSearchResp
   return apiFetch<InstrumentSearchResponse>(`/instruments/search?${qs.toString()}`, {
     method: 'GET',
   })
+}
+
+export async function getInstrumentNews(
+  symbol: string,
+  params?: { limit?: number },
+): Promise<InstrumentTickerNewsResponse> {
+  const sp = new URLSearchParams()
+  if (params?.limit != null) sp.set('limit', String(params.limit))
+  const q = sp.toString()
+  return apiFetch<InstrumentTickerNewsResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/news${q ? `?${q}` : ''}`,
+    { method: 'GET' },
+  )
 }
 
 export async function getInstrumentOhlcv(

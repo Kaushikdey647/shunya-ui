@@ -136,12 +136,21 @@ export interface BacktestJobOut {
   finished_at: string | null
 }
 
+export interface BacktestTargetHistoryRow {
+  date: string
+  targets: Record<string, unknown>
+}
+
 export interface BacktestResultPayload {
   job_id: string
   metrics: Record<string, unknown>
   equity_curve: Record<string, unknown>[]
   turnover_history: Record<string, unknown>[]
   benchmark?: Record<string, unknown> | null
+  returns_analysis?: unknown
+  drawdown_analysis?: unknown
+  sharpe_analysis?: unknown
+  target_history?: BacktestTargetHistoryRow[] | unknown[]
 }
 
 export interface DataSummaryRequest extends FinTsRequest {
@@ -217,7 +226,6 @@ export interface DataDashboardResponse {
   max_buckets: number
   sector_counts: ClassificationLabelCount[]
   industry_counts: ClassificationLabelCount[]
-  sub_industry_counts: ClassificationLabelCount[]
 }
 
 export type HealthComponentStatus = 'ok' | 'error'
@@ -259,6 +267,32 @@ export interface InstrumentSearchResponse {
   quotes: InstrumentSearchQuote[]
   news: InstrumentSearchNewsItem[]
   nav_links: InstrumentNavLink[]
+}
+
+export interface InstrumentTickerNewsItem {
+  title: string
+  link?: string | null
+  publisher?: string | null
+  published_at?: string | null
+  story_id?: string | null
+  content_type?: string | null
+  summary?: string | null
+  description?: string | null
+  provider_url?: string | null
+  provider_source_id?: string | null
+  canonical_site?: string | null
+  canonical_region?: string | null
+  canonical_lang?: string | null
+  is_hosted?: boolean | null
+  thumbnail_url?: string | null
+  editors_pick?: boolean | null
+  is_premium_news?: boolean | null
+  is_premium_free_news?: boolean | null
+}
+
+export interface InstrumentTickerNewsResponse {
+  symbol: string
+  news: InstrumentTickerNewsItem[]
 }
 
 export interface OhlcvBar {

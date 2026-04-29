@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { getInstrumentOhlcv } from '../api/endpoints'
+import { getInstrumentNews, getInstrumentOhlcv } from '../api/endpoints'
 import ApiErrorAlert from '../components/ApiErrorAlert'
 import InstrumentChart from '../components/InstrumentChart'
 
@@ -39,6 +39,15 @@ export default function InstrumentDetailPage() {
       }),
     enabled: symbol != null,
   })
+
+  const newsQuery = useQuery({
+    queryKey: ['instrument-news', symbol],
+    queryFn: () => getInstrumentNews(symbol!),
+    enabled: symbol != null,
+    staleTime: 60_000,
+  })
+
+  const newsRows = newsQuery.data?.news
 
   if (!symbol) {
     return (
@@ -79,6 +88,7 @@ export default function InstrumentDetailPage() {
 
       {ohlcv.isLoading && <p className="muted">Loading chart…</p>}
       <ApiErrorAlert error={ohlcv.error} />
+      <ApiErrorAlert error={newsQuery.error} />
       {ohlcv.data?.storage_error && (
         <div className="alert alert-error" role="alert">
           {ohlcv.data.storage_error}
@@ -93,7 +103,11 @@ export default function InstrumentDetailPage() {
         <p className="muted">No bars returned for this range.</p>
       )}
       {ohlcv.data && ohlcv.data.bars.length > 0 && (
-        <InstrumentChart bars={ohlcv.data.bars} key={`${preset.id}-${symbol}`} />
+        <InstrumentChart
+          bars={ohlcv.data.bars}
+          news={newsRows}
+          key={`${preset.id}-${symbol}`}
+        />
       )}
     </div>
   )

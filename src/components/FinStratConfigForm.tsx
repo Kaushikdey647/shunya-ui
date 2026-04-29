@@ -132,6 +132,8 @@ export default function FinStratConfigForm({
     }
   }, [resetKey, form, config, onValidChange])
 
+  const decayMode = form.watch('decay_mode')
+
   // eslint-disable-next-line react-hooks/incompatible-library -- debounced draft for create-alpha only
   const watched = form.watch()
   useEffect(() => {
@@ -168,18 +170,21 @@ export default function FinStratConfigForm({
       <label>
         Decay mode
         <select {...form.register('decay_mode')}>
-          <option value="ema">ema</option>
-          <option value="linear">linear</option>
+          <option value="ema">ema (EMA coefficient)</option>
+          <option value="linear">linear (fixed window)</option>
         </select>
       </label>
-      <label>
-        Decay
-        <input type="number" step="any" {...form.register('decay')} />
-      </label>
-      <label>
-        Decay window
-        <input type="number" step="1" {...form.register('decay_window')} />
-      </label>
+      {decayMode === 'ema' ? (
+        <label>
+          Decay (EMA coefficient in [0, 1))
+          <input type="number" step="any" {...form.register('decay')} />
+        </label>
+      ) : (
+        <label>
+          Decay window (bars, integer ≥ 1)
+          <input type="number" step="1" {...form.register('decay_window')} />
+        </label>
+      )}
       <label>
         Signal delay
         <input type="number" step="1" {...form.register('signal_delay')} />

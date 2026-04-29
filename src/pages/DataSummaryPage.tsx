@@ -250,7 +250,6 @@ export default function DataSummaryPage() {
             <div className="dashboard-chart-grid">
               <ClassificationPiePanel title="Sector" counts={data.sector_counts ?? []} />
               <ClassificationPiePanel title="Industry" counts={data.industry_counts ?? []} />
-              <ClassificationPiePanel title="Sub-industry" counts={data.sub_industry_counts ?? []} />
             </div>
           </section>
 
