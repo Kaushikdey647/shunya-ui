@@ -1,8 +1,23 @@
+import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
+import CommandPalette from './CommandPalette'
 import SideNav from './SideNav'
 import TopNav from './TopNav'
 
 export default function AppShell() {
+  const [cmdOpen, setCmdOpen] = useState(false)
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setCmdOpen((o) => !o)
+      }
+    }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [])
+
   return (
     <div className="app-shell">
       <TopNav />
@@ -12,6 +27,7 @@ export default function AppShell() {
           <Outlet />
         </main>
       </div>
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
     </div>
   )
 }

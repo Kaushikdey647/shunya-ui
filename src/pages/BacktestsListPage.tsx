@@ -48,10 +48,11 @@ export default function BacktestsListPage() {
   })
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- selection is page-scoped; clear when filters/paging change
     setSelected(new Set())
   }, [limit, offset, alphaFilterParam, statusFilter])
 
-  const rows = q.data ?? []
+  const rows = useMemo(() => q.data ?? [], [q.data])
 
   const pageIds = useMemo(() => rows.map((j) => j.id), [rows])
   const allOnPageSelected =

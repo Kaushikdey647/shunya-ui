@@ -10,6 +10,7 @@ import {
 } from 'lightweight-charts'
 import { useEffect, useRef, useState } from 'react'
 import type { InstrumentTickerNewsItem, OhlcvBar } from '../api/types'
+import { barTimesUtcSeconds, snapNewsToBarTime, timeToUnixSeconds } from '../utils/chartBarTimes'
 
 function chartColors() {
   const cs = getComputedStyle(document.documentElement)
@@ -21,28 +22,6 @@ function chartColors() {
     down: '#f23645',
     news: (cs.getPropertyValue('--link').trim() || '#60a5fa') as string,
   }
-}
-
-function barTimesUtcSeconds(bars: OhlcvBar[]): number[] {
-  return bars
-    .map((b) => Math.floor(new Date(b.time).getTime() / 1000))
-    .sort((a, b) => a - b)
-}
-
-/** Marker times must match a bar time; use latest bar at or before the headline time. */
-function snapNewsToBarTime(newsSec: number, barTimes: number[]): number {
-  const first = barTimes[0]!
-  const last = barTimes[barTimes.length - 1]!
-  if (newsSec <= first) return first
-  if (newsSec >= last) return last
-  let lo = 0
-  let hi = barTimes.length - 1
-  while (lo < hi) {
-    const mid = Math.ceil((lo + hi) / 2)
-    if (barTimes[mid]! <= newsSec) lo = mid
-    else hi = mid - 1
-  }
-  return barTimes[lo]!
 }
 
 const EMPTY_NEWS: InstrumentTickerNewsItem[] = []
@@ -255,6 +234,20 @@ function renderNewsTooltip(root: HTMLElement, items: InstrumentTickerNewsItem[])
   root.appendChild(inner)
 }
 
+function renderNewsTooltipCompact(root: HTMLElement, items: InstrumentTickerNewsItem[]) {
+  root.replaceChildren()
+  const inner = document.createElement('div')
+  inner.className = 'instrument-chart-tooltip-inner'
+  const p = document.createElement('p')
+  p.style.margin = '0'
+  p.style.fontSize = '0.75rem'
+  p.style.color = 'var(--text-muted)'
+  p.textContent =
+    items.length === 1 ? items[0]!.title : `${items.length} articles — Context feed`
+  inner.appendChild(p)
+  root.appendChild(inner)
+}
+
 function placeTooltip(
   shell: HTMLElement,
   tooltip: HTMLElement,
@@ -325,12 +318,29 @@ function planNewsMarkers(
 type Props = {
   bars: OhlcvBar[]
   news?: InstrumentTickerNewsItem[] | undefined
+  /** Fires with logical crosshair time (unix seconds) when pointer moves; null when cleared. */
+  onCrosshairBarUtc?: (unixSec: number | null) => void
+  /** Shrink marker hover tooltip when using side Context feed. */
+  compactNewsTooltip?: boolean
 }
 
-export default function InstrumentChart({ bars, news }: Props) {
+export default function InstrumentChart({
+  bars,
+  news,
+  onCrosshairBarUtc,
+  compactNewsTooltip = false,
+}: Props) {
   const shellRef = useRef<HTMLDivElement>(null)
   const chartPaneRef = useRef<HTMLDivElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
+  const crosshairCbRef = useRef(onCrosshairBarUtc)
+  const compactTipRef = useRef(compactNewsTooltip)
+  useEffect(() => {
+    crosshairCbRef.current = onCrosshairBarUtc
+  }, [onCrosshairBarUtc])
+  useEffect(() => {
+    compactTipRef.current = compactNewsTooltip
+  }, [compactNewsTooltip])
   const [themeTick, setThemeTick] = useState(0)
   const newsList = news ?? EMPTY_NEWS
 
@@ -400,6 +410,9 @@ export default function InstrumentChart({ bars, news }: Props) {
     }
 
     const onCrosshairMove = (param: MouseEventParams<Time>) => {
+      const utc = param.point ? timeToUnixSeconds(param.time) : null
+      crosshairCbRef.current?.(utc)
+
       if (tooltipByMarkerId.size === 0) {
         hideTooltip()
         return
@@ -418,7 +431,11 @@ export default function InstrumentChart({ bars, news }: Props) {
         hideTooltip()
         return
       }
-      renderNewsTooltip(tooltipEl, items)
+      if (compactTipRef.current) {
+        renderNewsTooltipCompact(tooltipEl, items)
+      } else {
+        renderNewsTooltip(tooltipEl, items)
+      }
       requestAnimationFrame(() => {
         placeTooltip(shell, tooltipEl, param.point!.x, param.point!.y)
       })
@@ -426,7 +443,10 @@ export default function InstrumentChart({ bars, news }: Props) {
 
     chart.subscribeCrosshairMove(onCrosshairMove)
 
-    const onShellLeave = () => hideTooltip()
+    const onShellLeave = () => {
+      hideTooltip()
+      crosshairCbRef.current?.(null)
+    }
     shell.addEventListener('mouseleave', onShellLeave)
 
     const ro = new ResizeObserver(() => {

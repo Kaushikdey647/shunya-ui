@@ -1,65 +1,33 @@
-import { useQuery } from '@tanstack/react-query'
-import { getHealth } from '../api/endpoints'
-import ApiErrorAlert from '../components/ApiErrorAlert'
+import MacroStrip from '../components/home/MacroStrip'
+import HealthMiniCard from '../components/home/HealthMiniCard'
+import MarketHeadlines from '../components/home/MarketHeadlines'
+import MoversPanel from '../components/home/MoversPanel'
+import RecentBacktestsFeed from '../components/home/RecentBacktestsFeed'
+import WatchlistCard from '../components/home/WatchlistCard'
 
 export default function HomePage() {
-  const q = useQuery({ queryKey: ['health'], queryFn: getHealth })
-
   return (
-    <div className="page-inner stack">
-      <h1>Shunya backtest</h1>
-      <p className="muted">
-        API is proxied from this dev server as <code className="mono">/api</code> →{' '}
-        <code className="mono">http://127.0.0.1:8000</code>. Start the FastAPI process first (
-        <code className="mono">uv run python -m backtest_api</code>).
-      </p>
+    <div className="page-inner home-dashboard">
+      <header className="home-dashboard-header">
+        <h1 style={{ margin: 0 }}>Dashboard</h1>
+        <p className="muted" style={{ margin: '0.25rem 0 0', fontSize: '0.875rem' }}>
+          Macro context, movers, headlines, and your latest backtests.
+        </p>
+      </header>
 
-      <section>
-        <h2>API health</h2>
-        {q.isLoading && <p className="muted">Checking…</p>}
-        <ApiErrorAlert error={q.error} />
-        {q.data && (
-          <div className="stack">
-            <p
-              className={
-                q.data.status === 'ok'
-                  ? 'alert alert-success'
-                  : q.data.status === 'degraded'
-                    ? 'alert alert-warn'
-                    : 'alert alert-error'
-              }
-            >
-              <code className="mono">GET /health</code> → <strong>{q.data.status}</strong>
-            </p>
-            <table className="health-table">
-              <thead>
-                <tr>
-                  <th>Component</th>
-                  <th>Status</th>
-                  <th>Latency (ms)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Backend</td>
-                  <td>{q.data.backend.status}</td>
-                  <td className="mono">{q.data.backend.latency_ms}</td>
-                </tr>
-                <tr>
-                  <td>Database</td>
-                  <td>{q.data.database.status}</td>
-                  <td className="mono">{q.data.database.latency_ms}</td>
-                </tr>
-                <tr>
-                  <td>Yahoo Finance</td>
-                  <td>{q.data.yfinance.status}</td>
-                  <td className="mono">{q.data.yfinance.latency_ms}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <MacroStrip />
+
+      <div className="home-main-split">
+        <div className="home-col-pulse stack">
+          <MoversPanel />
+          <MarketHeadlines />
+        </div>
+        <div className="home-col-engine stack">
+          <RecentBacktestsFeed />
+          <WatchlistCard />
+          <HealthMiniCard />
+        </div>
+      </div>
     </div>
   )
 }

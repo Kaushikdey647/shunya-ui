@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getInstrumentNews, getInstrumentOhlcv } from '../api/endpoints'
 import ApiErrorAlert from '../components/ApiErrorAlert'
 import InstrumentChart from '../components/InstrumentChart'
+import InstrumentContextFeed from '../components/InstrumentContextFeed'
+import { barTimesUtcSeconds, snapCrosshairToBarTime } from '../utils/chartBarTimes'
 
 type Preset = { id: string; label: string; interval: string; period: string }
 
@@ -29,6 +31,7 @@ export default function InstrumentDetailPage() {
   const { symbol: symbolParam } = useParams<{ symbol: string }>()
   const symbol = useMemo(() => normalizeSymbol(symbolParam), [symbolParam])
   const [preset, setPreset] = useState<Preset>(() => TIMEFRAMES[5]!)
+  const [focusBarUnix, setFocusBarUnix] = useState<number | null>(null)
 
   const ohlcv = useQuery({
     queryKey: ['instrument-ohlcv', symbol, preset.interval, preset.period],
@@ -47,7 +50,24 @@ export default function InstrumentDetailPage() {
     staleTime: 60_000,
   })
 
-  const newsRows = newsQuery.data?.news
+  const newsRows = newsQuery.data?.news ?? []
+
+  const barTimes = useMemo(
+    () => barTimesUtcSeconds(ohlcv.data?.bars ?? []),
+    [ohlcv.data?.bars],
+  )
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset crosshair-linked highlight when ticker changes
+    setFocusBarUnix(null)
+  }, [symbol])
+
+  const onCrosshairBarUtc = useCallback(
+    (utc: number | null) => {
+      setFocusBarUnix(snapCrosshairToBarTime(utc, barTimes))
+    },
+    [barTimes],
+  )
 
   if (!symbol) {
     return (
@@ -79,7 +99,10 @@ export default function InstrumentDetailPage() {
             key={p.id}
             type="button"
             className={`timeframe-btn${p.id === preset.id ? ' timeframe-btn-active' : ''}`}
-            onClick={() => setPreset(p)}
+            onClick={() => {
+              setPreset(p)
+              setFocusBarUnix(null)
+            }}
           >
             {p.label}
           </button>
@@ -103,11 +126,22 @@ export default function InstrumentDetailPage() {
         <p className="muted">No bars returned for this range.</p>
       )}
       {ohlcv.data && ohlcv.data.bars.length > 0 && (
-        <InstrumentChart
-          bars={ohlcv.data.bars}
-          news={newsRows}
-          key={`${preset.id}-${symbol}`}
-        />
+        <div className="instrument-split">
+          <div className="instrument-split-chart">
+            <InstrumentChart
+              bars={ohlcv.data.bars}
+              news={newsRows}
+              onCrosshairBarUtc={onCrosshairBarUtc}
+              compactNewsTooltip
+              key={`${preset.id}-${symbol}`}
+            />
+          </div>
+          <InstrumentContextFeed
+            news={newsRows}
+            barTimes={barTimes}
+            focusBarUnix={focusBarUnix}
+          />
+        </div>
       )}
     </div>
   )

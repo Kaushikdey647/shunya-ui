@@ -10,8 +10,8 @@ export default function SideNav() {
         <NavLink to="/" end className={linkClass}>
           Home
         </NavLink>
-        <NavLink to="/alphas" className={linkClass}>
-          Alphas
+        <NavLink to="/studio" className={linkClass}>
+          Studio
         </NavLink>
         <NavLink to="/backtests" className={linkClass}>
           Backtests

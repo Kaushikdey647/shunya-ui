@@ -132,9 +132,9 @@ export default function FinStratConfigForm({
     }
   }, [resetKey, form, config, onValidChange])
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch()
   const decayMode = form.watch('decay_mode')
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- debounced draft for create-alpha only
   const watched = form.watch()
   useEffect(() => {
     if (!onValidChange) return

@@ -1,10 +1,11 @@
-import { apiFetch } from './client'
+import { ApiError, apiFetch } from './client'
 import type {
   AlphaCreate,
   AlphaOut,
   AlphaPatch,
   BacktestCreate,
   BacktestJobOut,
+  BacktestLogLine,
   BacktestResultPayload,
   DashboardBucketParam,
   DataDashboardResponse,
@@ -15,10 +16,46 @@ import type {
   InstrumentSearchResponse,
   InstrumentTickerNewsResponse,
   EquityIndexOut,
+  MarketHeadlinesResponse,
+  MarketMoversResponse,
+  MarketSnapshotResponse,
+  MoversKind,
 } from './types'
 
 export async function getHealth(): Promise<HealthResponse> {
   return apiFetch<HealthResponse>('/health', { method: 'GET' })
+}
+
+export async function postMarketSnapshot(body: {
+  symbols: string[]
+}): Promise<MarketSnapshotResponse> {
+  return apiFetch<MarketSnapshotResponse>('/market/snapshot', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export async function getMarketMovers(params: {
+  kind: MoversKind
+  limit?: number
+}): Promise<MarketMoversResponse> {
+  const sp = new URLSearchParams({ kind: params.kind })
+  if (params.limit != null) sp.set('limit', String(params.limit))
+  return apiFetch<MarketMoversResponse>(`/market/movers?${sp.toString()}`, {
+    method: 'GET',
+  })
+}
+
+export async function getMarketHeadlines(params?: {
+  limit?: number
+}): Promise<MarketHeadlinesResponse> {
+  const sp = new URLSearchParams()
+  if (params?.limit != null) sp.set('limit', String(params.limit))
+  const q = sp.toString()
+  return apiFetch<MarketHeadlinesResponse>(
+    `/market/headlines${q ? `?${q}` : ''}`,
+    { method: 'GET' },
+  )
 }
 
 export async function listEquityIndices(): Promise<EquityIndexOut[]> {
@@ -101,6 +138,18 @@ export async function getBacktest(jobId: string): Promise<BacktestJobOut> {
   return apiFetch<BacktestJobOut>(`/backtests/${encodeURIComponent(jobId)}`, {
     method: 'GET',
   })
+}
+
+export async function getBacktestLogs(jobId: string): Promise<BacktestLogLine[]> {
+  try {
+    return await apiFetch<BacktestLogLine[]>(
+      `/backtests/${encodeURIComponent(jobId)}/logs`,
+      { method: 'GET' },
+    )
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return []
+    throw e
+  }
 }
 
 export async function getBacktestResult(

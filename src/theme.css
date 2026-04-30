@@ -5,6 +5,13 @@ html {
   --radius: 4px;
   --top-nav-h: 44px;
   --side-nav-w: 200px;
+  --table-cell-y: 0.5rem;
+  --table-cell-x: 0.65rem;
+}
+
+html[data-table-density='compact'] {
+  --table-cell-y: 0.28rem;
+  --table-cell-x: 0.45rem;
 }
 
 html[data-theme='light'] {
@@ -19,9 +26,13 @@ html[data-theme='light'] {
   --text: #131722;
   --text-strong: #0c0e15;
   --text-muted: #787b86;
+  /* Primary CTA / buttons only — chrome links use --link */
   --accent: #2962ff;
   --accent-muted: rgba(41, 98, 255, 0.12);
   --focus-ring: #2962ff;
+  --link: #5c6570;
+  --chrome-accent: #3d4450;
+  --chrome-accent-muted: rgba(61, 68, 80, 0.12);
   --success: #089981;
   --success-bg: #e6f9f4;
   --error: #f23645;
@@ -48,6 +59,9 @@ html[data-theme='dark'] {
   --accent: #2962ff;
   --accent-muted: rgba(41, 98, 255, 0.2);
   --focus-ring: #5b8cff;
+  --link: #9ca3af;
+  --chrome-accent: #c8cdd8;
+  --chrome-accent-muted: rgba(200, 205, 216, 0.12);
   --success: #089981;
   --success-bg: rgba(8, 153, 129, 0.15);
   --error: #f23645;

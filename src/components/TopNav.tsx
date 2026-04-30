@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import DensityToggle from './DensityToggle'
 import HealthIndicator from './HealthIndicator'
 import ThemeToggle from './ThemeToggle'
 import TickerSearch from './TickerSearch'
@@ -16,6 +17,7 @@ export default function TopNav() {
       </div>
       <div className="top-nav-right">
         <HealthIndicator />
+        <DensityToggle />
         <ThemeToggle />
       </div>
     </header>

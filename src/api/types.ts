@@ -137,6 +137,11 @@ export interface BacktestJobOut {
   finished_at: string | null
 }
 
+export interface BacktestLogLine {
+  ts: string
+  message: string
+}
+
 export interface BacktestTargetHistoryRow {
   date: string
   targets: Record<string, unknown>
@@ -243,6 +248,43 @@ export interface HealthResponse {
   backend: HealthCheckItem
   database: HealthCheckItem
   yfinance: HealthCheckItem
+}
+
+export type MoversKind = 'gainers' | 'losers' | 'active'
+
+export interface MarketSnapshotRow {
+  symbol: string
+  last: number | null
+  pct_change_1d: number | null
+  volume: number | null
+  sparkline_close: number[]
+}
+
+export interface MarketSnapshotResponse {
+  rows: MarketSnapshotRow[]
+}
+
+export interface MarketMoverRow {
+  ticker: string
+  price: number | null
+  pct_change: number | null
+  volume: number | null
+}
+
+export interface MarketMoversResponse {
+  kind: MoversKind
+  rows: MarketMoverRow[]
+}
+
+export interface MarketHeadlineItem {
+  title: string
+  publisher?: string | null
+  link?: string | null
+  published_at?: string | null
+}
+
+export interface MarketHeadlinesResponse {
+  headlines: MarketHeadlineItem[]
 }
 
 export interface InstrumentSearchQuote {

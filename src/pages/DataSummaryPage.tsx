@@ -105,10 +105,12 @@ export default function DataSummaryPage() {
   })
 
   const data = query.data
+  const tickers = data?.tickers
+  const completenessHistogram = data?.completeness_histogram
 
   const sortedTickers = useMemo(() => {
-    if (!data?.tickers.length) return []
-    const rows = [...data.tickers]
+    if (!tickers?.length) return []
+    const rows = [...tickers]
     rows.sort((a, b) => {
       const dir = sortAsc ? 1 : -1
       const av = a[sortKey]
@@ -122,11 +124,11 @@ export default function DataSummaryPage() {
       return dir * (an < bn ? -1 : 1)
     })
     return rows
-  }, [data?.tickers, sortAsc, sortKey])
+  }, [tickers, sortAsc, sortKey])
 
   const scatterPoints = useMemo(() => {
-    if (!data?.tickers) return []
-    return data.tickers
+    if (!tickers) return []
+    return tickers
       .filter(
         (t) =>
           t.risk_ann_pct != null &&
@@ -141,15 +143,15 @@ export default function DataSummaryPage() {
         sharpe: t.sharpe,
         bars: t.raw_bar_count,
       }))
-  }, [data?.tickers])
+  }, [tickers])
 
   const histogramBars = useMemo(() => {
-    if (!data?.completeness_histogram) return []
-    return data.completeness_histogram.map((count, i) => ({
+    if (!completenessHistogram) return []
+    return completenessHistogram.map((count, i) => ({
       label: `${i * 10}–${i === 9 ? '100' : String((i + 1) * 10)}`,
       count,
     }))
-  }, [data?.completeness_histogram])
+  }, [completenessHistogram])
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortAsc(!sortAsc)
