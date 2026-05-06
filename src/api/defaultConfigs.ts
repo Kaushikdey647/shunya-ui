@@ -1,6 +1,6 @@
 import type { FinBtConfig, FinStratConfig, FinTsRequest } from './types'
 
-/** Mirrors Pydantic defaults in backtest_api/schemas/models.py */
+/** Mirrors Pydantic defaults in api/schemas/models.py */
 export const defaultFinStratConfig: FinStratConfig = {
   decay_mode: 'ema',
   decay: 0,

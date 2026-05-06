@@ -1,4 +1,4 @@
-/** Keep in sync with backtest_api/backtest_windows.py */
+/** Keep in sync with api/backtest_windows.py */
 
 export const BACKTEST_SIM_START = '2020-01-01'
 export const BACKTEST_SIM_END_EXCLUSIVE = '2026-01-01'

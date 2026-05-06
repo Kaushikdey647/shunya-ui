@@ -1,4 +1,4 @@
-/** API DTOs mirroring backtest_api OpenAPI — regenerate from `/openapi.json` (e.g. openapi-typescript) after backend schema changes. */
+/** API DTOs mirroring api OpenAPI — regenerate from `/openapi.json` (e.g. openapi-typescript) after backend schema changes. */
 export type BarUnit =
   | 'SECONDS'
   | 'MINUTES'

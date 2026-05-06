@@ -2,7 +2,7 @@
 
 Web front end for **Shunya**: alpha studio, backtests, instrument charts, data coverage dashboards, and a **home dashboard** (macro strip, movers, headlines, recent runs, watchlist, compact health). Built with **React 19**, **TypeScript**, **Vite 8**, and **TanStack Query**. Charts use **Recharts** and **lightweight-charts** (TradingView).
 
-This app expects the repo-local **FastAPI** service from the `[shunya](https://github.com/Kaushikdey647/shunya)` Python project (`backtest_api`). It does not embed business logic for backtests; it calls JSON HTTP APIs.
+This app expects the repo-local **FastAPI** service from the `[shunya](https://github.com/Kaushikdey647/shunya)` Python project (`api`). It does not embed business logic for backtests; it calls JSON HTTP APIs.
 
 ---
 
@@ -29,11 +29,11 @@ cd /path/to/shunya
 uv sync --extra api --extra timescale
 export DATABASE_URL=postgresql://...   # optional but recommended for full features
 shunya-timescale migrate                 # if using Timescale
-uv run python -m backtest_api
-# or: uv run uvicorn backtest_api.main:app --host 127.0.0.1 --port 8000
+uv run python -m api
+# or: uv run uvicorn api.main:app --host 127.0.0.1 --port 8000
 ```
 
-Full API setup is documented in the `**shunya**` repo: `**backtest_api/README.md**` (clone that repository and follow install, `DATABASE_URL`, migrations, and `uvicorn` / `python -m backtest_api`).
+Full API setup is documented in the `**shunya**` repo: `**api/README.md**` (clone that repository and follow install, `DATABASE_URL`, migrations, and `uvicorn` / `python -m api`).
 
 ---
 
@@ -57,6 +57,8 @@ Full API setup is documented in the `**shunya**` repo: `**backtest_api/README.md
 - **Production / custom backend:** set `VITE_API_BASE` at build time to your API origin (with or without trailing slash). Example: `VITE_API_BASE=https://api.example.com npm run build` if the UI is served from another host and the API is at `https://api.example.com/health`, etc. If the API is behind the same origin under `/api`, leave the default.
 
 **CORS:** If you serve the UI and API on different origins without a reverse proxy, configure CORS on the FastAPI app for your UI origin.
+
+**Railway:** Example deploy settings are in [`railway.toml`](railway.toml) (`npm ci`, `vite preview` on `$PORT`). Register **`VITE_API_BASE`** in Railway with your production API URL so it is present during **`npm run build`** (Vite inlines env at build time).
 
 ---
 
@@ -124,8 +126,8 @@ The home **Watchlist** card stores tickers only in **this browser** (`localStora
 
 ## Related repositories
 
-- **Python library + API + worker:** `[shunya](https://github.com/Kaushikdey647/shunya)` — `shunya` package (panels, alphas, backtrader), `backtest_api` (FastAPI), Timescale tooling (`shunya-timescale` CLI).
-- **API reference:** `[backtest_api/README.md](https://github.com/Kaushikdey647/shunya/blob/main/backtest_api/README.md)` (environment variables, migrations, test notes).
+- **Python library + API + worker:** `[shunya](https://github.com/Kaushikdey647/shunya)` — `shunya` package (panels, alphas, backtrader), `api` (FastAPI), Timescale tooling (`shunya-timescale` CLI).
+- **API reference:** `[api/README.md](https://github.com/Kaushikdey647/shunya/blob/main/api/README.md)` (environment variables, migrations, test notes).
 
 ---
 
