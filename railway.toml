@@ -10,7 +10,9 @@
 
 [build]
 builder = "RAILPACK"
-buildCommand = "npm ci && npm run build"
+# Railpack runs `npm ci` in the install phase; do not run `npm ci` again here — a second
+# `npm ci` often hits `EBUSY` removing `node_modules/.vite` on overlay filesystems.
+buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm run preview -- --host 0.0.0.0 --port $PORT"
