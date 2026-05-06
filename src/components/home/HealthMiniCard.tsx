@@ -4,6 +4,7 @@ import { getHealth } from '../../api/endpoints'
 import { isHealthResponse } from '../../api/types'
 import { useMantineTableDensity } from '../../hooks/useMantineTableDensity'
 import ApiErrorAlert from '../ApiErrorAlert'
+import { HealthMiniCardBodySkeleton } from './homeDashboardSkeletons'
 
 export default function HealthMiniCard() {
   const tableProps = useMantineTableDensity()
@@ -18,11 +19,7 @@ export default function HealthMiniCard() {
       <Stack gap="md">
         <Title order={5}>System health</Title>
         <ApiErrorAlert error={q.error} />
-        {q.isLoading && (
-          <Text c="dimmed" size="sm">
-            Checking…
-          </Text>
-        )}
+        {q.isLoading && <HealthMiniCardBodySkeleton tableProps={tableProps} />}
         {q.data && !isHealthResponse(q.data) && (
           <Alert color="red" variant="light" title="Unexpected health response">
             <Text size="sm">

@@ -12,6 +12,7 @@ import { Line, LineChart, ResponsiveContainer } from 'recharts'
 import { postMarketSnapshot } from '../../api/endpoints'
 import type { MarketSnapshotRow } from '../../api/types'
 import ApiErrorAlert from '../ApiErrorAlert'
+import { MacroStripSkeleton } from './homeDashboardSkeletons'
 import { MACRO_STRIP_SYMBOLS } from '../../lib/macroSymbols'
 import { SignedPctText } from '../../lib/signedPct'
 
@@ -76,11 +77,7 @@ export default function MacroStrip() {
   return (
     <Stack gap="sm" aria-label="Macro overview">
       <ApiErrorAlert error={q.error} />
-      {q.isLoading && (
-        <Text c="dimmed" size="sm">
-          Loading macro…
-        </Text>
-      )}
+      {q.isLoading && <MacroStripSkeleton />}
       {!q.isLoading && (
         <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
           {symbols.map((sym) => {

@@ -1,7 +1,7 @@
 import { Anchor, Group, Stack, Table, Text, Title } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
-import { searchInstruments } from '../api/endpoints'
+import { searchInstruments, instrumentDetailPath } from '../api/endpoints'
 import ApiErrorAlert from '../components/ApiErrorAlert'
 import PageScaffold from '../components/PageScaffold'
 import { useMantineTableDensity } from '../hooks/useMantineTableDensity'
@@ -60,7 +60,12 @@ export default function SearchResultsPage() {
                     {query.data.quotes.map((row) => (
                       <Table.Tr key={`${row.symbol}-${row.exchange ?? ''}`}>
                         <Table.Td>
-                          <Anchor component={Link} to={`/instruments/${encodeURIComponent(row.symbol)}`} ff="monospace" size="sm">
+                          <Anchor
+                            component={Link}
+                            to={instrumentDetailPath(row.symbol, row.quote_type)}
+                            ff="monospace"
+                            size="sm"
+                          >
                             {row.symbol}
                           </Anchor>
                         </Table.Td>

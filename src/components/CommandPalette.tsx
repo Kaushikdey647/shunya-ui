@@ -11,7 +11,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listAlphas, listBacktests, searchInstruments } from '../api/endpoints'
+import { listAlphas, listBacktests, searchInstruments, instrumentDetailPath } from '../api/endpoints'
 import type { AlphaOut, BacktestJobOut } from '../api/types'
 
 function useDebouncedValue<T>(value: T, ms: number): T {
@@ -190,7 +190,7 @@ export default function CommandPalette({ open, onClose }: Props) {
                     variant="light"
                     color="yellow"
                     justify="flex-start"
-                    onClick={() => go(`/instruments/${encodeURIComponent(row.symbol)}`)}
+                    onClick={() => go(instrumentDetailPath(row.symbol, row.quote_type))}
                   >
                     <Stack gap={0} align="flex-start">
                       <Text size="sm" ff="monospace" fw={600}>

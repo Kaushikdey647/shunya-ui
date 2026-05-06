@@ -1,12 +1,15 @@
 import {
+  Accordion,
   Alert,
   Button,
   Checkbox,
   Code,
+  Group,
   Paper,
   ScrollArea,
   Stack,
   Table,
+  Tabs,
   Text,
   Title,
 } from '@mantine/core'
@@ -114,6 +117,9 @@ export default function BacktestDetailPage() {
     enabled: jobQ.data?.status === 'succeeded',
   })
 
+  const succeeded = jobQ.data?.status === 'succeeded'
+  const tabsKey = `${jobId ?? ''}-${jobQ.data?.status ?? ''}`
+
   if (!jobId) {
     return (
       <PageScaffold>
@@ -142,119 +148,159 @@ export default function BacktestDetailPage() {
             id: {jobQ.data.id}
           </Text>
 
-          <Paper withBorder p="md" radius="md">
-            <Stack gap="md">
-              <MetaRow label="Status">
-                <Text fw={700}>{jobQ.data.status}</Text>
-              </MetaRow>
-              <MetaRow label="Alpha id">
-                <Text ff="monospace">{jobQ.data.alpha_id}</Text>
-              </MetaRow>
-              {jobQ.data.alpha_name && (
-                <MetaRow label="Alpha name">
-                  <Text>{jobQ.data.alpha_name}</Text>
-                </MetaRow>
-              )}
-              {jobQ.data.index_code && (
-                <MetaRow label="Index">
-                  <Text ff="monospace">{jobQ.data.index_code}</Text>
-                </MetaRow>
-              )}
-              <MetaRow label="Include test period in results">
-                <Text>
-                  {jobQ.data.include_test_period_in_results ? 'Yes' : 'No (tune window only)'}
-                </Text>
-              </MetaRow>
-              <MetaRow label="Created">
-                <Text>{new Date(jobQ.data.created_at).toLocaleString()}</Text>
-              </MetaRow>
-              {jobQ.data.started_at && (
-                <MetaRow label="Started">
-                  <Text>{new Date(jobQ.data.started_at).toLocaleString()}</Text>
-                </MetaRow>
-              )}
-              {jobQ.data.finished_at && (
-                <MetaRow label="Finished">
-                  <Text>{new Date(jobQ.data.finished_at).toLocaleString()}</Text>
-                </MetaRow>
-              )}
-              {jobQ.data.error_message && (
-                <MetaRow label="Error">
-                  <Alert color="red" variant="light">
-                    <ScrollArea h={320}>
-                      <Code block ff="monospace" fz="xs">
-                        {jobQ.data.error_message}
-                      </Code>
-                    </ScrollArea>
-                  </Alert>
-                </MetaRow>
-              )}
-              {jobQ.data.result_summary && (
-                <MetaRow label="Result summary">
-                  <Code block ff="monospace" fz="xs">
-                    {JSON.stringify(jobQ.data.result_summary, null, 2)}
-                  </Code>
-                </MetaRow>
-              )}
-            </Stack>
-          </Paper>
+          <Tabs
+            key={tabsKey}
+            defaultValue={succeeded ? 'results' : 'overview'}
+            mt="md"
+            keepMounted={false}
+          >
+            <Tabs.List>
+              <Tabs.Tab value="overview">Overview</Tabs.Tab>
+              {succeeded && <Tabs.Tab value="results">Results</Tabs.Tab>}
+              {succeeded && <Tabs.Tab value="raw">Raw</Tabs.Tab>}
+            </Tabs.List>
 
-          {jobQ.data.status === 'succeeded' && (
-            <Stack gap="md">
-              <Title order={2} size="h4">
-                Result
-              </Title>
-              <Checkbox
-                label="Show raw JSON"
-                checked={rawJson}
-                onChange={(e) => setRawJson(e.currentTarget.checked)}
-              />
-              <ApiErrorAlert error={resultQ.error} />
-              {resultQ.isLoading && (
-                <Text c="dimmed" size="sm">
-                  Loading result…
-                </Text>
-              )}
-              {resultQ.data && rawJson && (
-                <Code block ff="monospace" fz="xs">
-                  {JSON.stringify(resultQ.data, null, 2)}
-                </Code>
-              )}
-              {resultQ.data && !rawJson && (
-                <>
-                  <Title order={3} size="h5">
-                    Overview
-                  </Title>
+            <Tabs.Panel value="overview" pt="md">
+              <Paper withBorder p="md" radius="md">
+                <Stack gap="md">
+                  <MetaRow label="Status">
+                    <Text fw={700}>{jobQ.data.status}</Text>
+                  </MetaRow>
+                  <MetaRow label="Alpha id">
+                    <Group gap="sm" wrap="wrap" align="center">
+                      <Text ff="monospace">{jobQ.data.alpha_id}</Text>
+                      <Button
+                        component={Link}
+                        to={`/studio/${encodeURIComponent(jobQ.data.alpha_id)}`}
+                        size="compact-xs"
+                        variant="light"
+                        color="yellow"
+                      >
+                        Open in Studio
+                      </Button>
+                    </Group>
+                  </MetaRow>
+                  {jobQ.data.alpha_name && (
+                    <MetaRow label="Alpha name">
+                      <Text>{jobQ.data.alpha_name}</Text>
+                    </MetaRow>
+                  )}
+                  {jobQ.data.index_code && (
+                    <MetaRow label="Index">
+                      <Text ff="monospace">{jobQ.data.index_code}</Text>
+                    </MetaRow>
+                  )}
+                  <MetaRow label="Include test period in results">
+                    <Text>
+                      {jobQ.data.include_test_period_in_results ? 'Yes' : 'No (tune window only)'}
+                    </Text>
+                  </MetaRow>
+                  <MetaRow label="Created">
+                    <Text>{new Date(jobQ.data.created_at).toLocaleString()}</Text>
+                  </MetaRow>
+                  {jobQ.data.started_at && (
+                    <MetaRow label="Started">
+                      <Text>{new Date(jobQ.data.started_at).toLocaleString()}</Text>
+                    </MetaRow>
+                  )}
+                  {jobQ.data.finished_at && (
+                    <MetaRow label="Finished">
+                      <Text>{new Date(jobQ.data.finished_at).toLocaleString()}</Text>
+                    </MetaRow>
+                  )}
+                  {jobQ.data.error_message && (
+                    <MetaRow label="Error">
+                      <Alert color="red" variant="light">
+                        <ScrollArea h={320}>
+                          <Code block ff="monospace" fz="xs">
+                            {jobQ.data.error_message}
+                          </Code>
+                        </ScrollArea>
+                      </Alert>
+                    </MetaRow>
+                  )}
+                  {jobQ.data.result_summary && (
+                    <MetaRow label="Result summary">
+                      <Code block ff="monospace" fz="xs">
+                        {JSON.stringify(jobQ.data.result_summary, null, 2)}
+                      </Code>
+                    </MetaRow>
+                  )}
+                </Stack>
+              </Paper>
+            </Tabs.Panel>
+
+            {succeeded && (
+              <Tabs.Panel value="results" pt="md">
+                <ApiErrorAlert error={resultQ.error} />
+                {resultQ.isLoading && (
+                  <Text c="dimmed" size="sm">
+                    Loading result…
+                  </Text>
+                )}
+                {resultQ.data && (
                   <Paper p="md" radius="md" withBorder>
                     <BacktestResultCharts data={resultQ.data} />
                   </Paper>
-                  <Title order={3} size="h5">
-                    Metrics
-                  </Title>
-                  <Table.ScrollContainer minWidth={400}>
-                    <Table {...density} striped>
-                      <Table.Tbody>
-                        {Object.entries(resultQ.data.metrics).map(([k, v]) => (
-                          <Table.Tr key={k}>
-                            <Table.Th w="40%">{k}</Table.Th>
-                            <Table.Td ff="monospace">{formatCell(v)}</Table.Td>
-                          </Table.Tr>
-                        ))}
-                      </Table.Tbody>
-                    </Table>
-                  </Table.ScrollContainer>
-                  <Title order={3} size="h5">
-                    Equity curve (table)
-                  </Title>
-                  <RowTable rows={resultQ.data.equity_curve} />
-                  <Title order={3} size="h5">
-                    Turnover history (table)
-                  </Title>
-                  <RowTable rows={resultQ.data.turnover_history} />
-                </>
-              )}
-            </Stack>
-          )}
+                )}
+              </Tabs.Panel>
+            )}
+
+            {succeeded && (
+              <Tabs.Panel value="raw" pt="md">
+                <Stack gap="md">
+                  <Checkbox
+                    label="Show raw JSON (full payload)"
+                    checked={rawJson}
+                    onChange={(e) => setRawJson(e.currentTarget.checked)}
+                  />
+                  {resultQ.isLoading && (
+                    <Text c="dimmed" size="sm">
+                      Loading result…
+                    </Text>
+                  )}
+                  {resultQ.data && rawJson && (
+                    <Code block ff="monospace" fz="xs">
+                      {JSON.stringify(resultQ.data, null, 2)}
+                    </Code>
+                  )}
+                  {resultQ.data && !rawJson && (
+                    <>
+                      <Title order={4} size="h5">
+                        Metrics (all keys)
+                      </Title>
+                      <Table.ScrollContainer minWidth={400}>
+                        <Table {...density} striped>
+                          <Table.Tbody>
+                            {Object.entries(resultQ.data.metrics).map(([k, v]) => (
+                              <Table.Tr key={k}>
+                                <Table.Th w="40%">{k}</Table.Th>
+                                <Table.Td ff="monospace">{formatCell(v)}</Table.Td>
+                              </Table.Tr>
+                            ))}
+                          </Table.Tbody>
+                        </Table>
+                      </Table.ScrollContainer>
+                      <Accordion variant="contained">
+                        <Accordion.Item value="eq">
+                          <Accordion.Control>Equity curve (table)</Accordion.Control>
+                          <Accordion.Panel>
+                            <RowTable rows={resultQ.data.equity_curve} />
+                          </Accordion.Panel>
+                        </Accordion.Item>
+                        <Accordion.Item value="to">
+                          <Accordion.Control>Turnover history (table)</Accordion.Control>
+                          <Accordion.Panel>
+                            <RowTable rows={resultQ.data.turnover_history} />
+                          </Accordion.Panel>
+                        </Accordion.Item>
+                      </Accordion>
+                    </>
+                  )}
+                </Stack>
+              </Tabs.Panel>
+            )}
+          </Tabs>
         </>
       )}
     </PageScaffold>

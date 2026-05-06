@@ -5,6 +5,7 @@ import { listBacktests } from '../../api/endpoints'
 import type { BacktestJobOut } from '../../api/types'
 import { useMantineTableDensity } from '../../hooks/useMantineTableDensity'
 import ApiErrorAlert from '../ApiErrorAlert'
+import { TableRowsSkeleton } from './homeDashboardSkeletons'
 
 function primaryMetric(summary: Record<string, unknown> | null): string {
   if (!summary) return '—'
@@ -36,9 +37,15 @@ export default function RecentBacktestsFeed() {
         <Title order={5}>Recent backtests</Title>
         <ApiErrorAlert error={q.error} />
         {q.isLoading && (
-          <Text c="dimmed" size="sm">
-            Loading…
-          </Text>
+          <TableRowsSkeleton
+            tableProps={tableProps}
+            columnCount={3}
+            rowCount={6}
+            headers={['Alpha', 'Status', 'Metric']}
+            minWidth={260}
+            mih={120}
+            mah={320}
+          />
         )}
         {!q.isLoading && q.data && (
           <Table.ScrollContainer minWidth={260} mih={120} mah={320}>

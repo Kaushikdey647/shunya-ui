@@ -12,7 +12,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { postMarketSnapshot } from '../../api/endpoints'
+import { postMarketSnapshot, instrumentDetailPath } from '../../api/endpoints'
 import {
   addWatchlistSymbol,
   readWatchlist,
@@ -21,6 +21,7 @@ import {
 import { SignedPctText } from '../../lib/signedPct'
 import { useMantineTableDensity } from '../../hooks/useMantineTableDensity'
 import ApiErrorAlert from '../ApiErrorAlert'
+import { TableRowsSkeleton } from './homeDashboardSkeletons'
 
 export default function WatchlistCard() {
   const qc = useQueryClient()
@@ -72,9 +73,16 @@ export default function WatchlistCard() {
           <>
             <ApiErrorAlert error={snap.error} />
             {snap.isLoading && (
-              <Text c="dimmed" size="sm">
-                Loading quotes…
-              </Text>
+              <TableRowsSkeleton
+                tableProps={tableProps}
+                columnCount={4}
+                rowCount={tickers.length}
+                headers={['Ticker', 'Last', 'Day %', '']}
+                minWidth={280}
+                mih={120}
+                mah={360}
+                lastHeaderWidth={90}
+              />
             )}
             {!snap.isLoading && (
               <Table.ScrollContainer minWidth={280} mih={120} mah={360}>
@@ -93,7 +101,7 @@ export default function WatchlistCard() {
                       return (
                         <Table.Tr key={sym}>
                           <Table.Td>
-                            <Anchor component={Link} to={`/instruments/${encodeURIComponent(sym)}`} ff="monospace" size="sm">
+                            <Anchor component={Link} to={instrumentDetailPath(sym)} ff="monospace" size="sm">
                               {sym}
                             </Anchor>
                           </Table.Td>

@@ -12,8 +12,15 @@ import type {
   DataSummaryRequest,
   DataSummaryResponse,
   HealthResponse,
+  InstrumentFinancialFrequency,
+  InstrumentFinancialStatementResponse,
+  InstrumentHoldersResponse,
   InstrumentOhlcvResponse,
+  InstrumentOptionChainResponse,
+  InstrumentOptionExpirationsResponse,
+  InstrumentOverviewResponse,
   InstrumentSearchResponse,
+  InstrumentStatement,
   InstrumentTickerNewsResponse,
   EquityIndexOut,
   MarketHeadlinesResponse,
@@ -201,6 +208,69 @@ export async function searchInstruments(q: string): Promise<InstrumentSearchResp
   return apiFetch<InstrumentSearchResponse>(`/instruments/search?${qs.toString()}`, {
     method: 'GET',
   })
+}
+
+/** Path to instrument detail; optional `quoteType` from search for optimistic UI. */
+export function instrumentDetailPath(symbol: string, quoteType?: string | null): string {
+  const enc = encodeURIComponent(symbol)
+  const t = quoteType?.trim()
+  if (t) return `/instruments/${enc}?qt=${encodeURIComponent(t)}`
+  return `/instruments/${enc}`
+}
+
+export async function getInstrumentOverview(
+  symbol: string,
+): Promise<InstrumentOverviewResponse> {
+  return apiFetch<InstrumentOverviewResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/overview`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentFinancials(
+  symbol: string,
+  params: {
+    statement: InstrumentStatement
+    frequency?: InstrumentFinancialFrequency
+    periods?: number
+  },
+): Promise<InstrumentFinancialStatementResponse> {
+  const sp = new URLSearchParams({ statement: params.statement })
+  if (params.frequency != null) sp.set('frequency', params.frequency)
+  if (params.periods != null) sp.set('periods', String(params.periods))
+  return apiFetch<InstrumentFinancialStatementResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/financials?${sp.toString()}`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentHolders(
+  symbol: string,
+): Promise<InstrumentHoldersResponse> {
+  return apiFetch<InstrumentHoldersResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/holders`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentOptionExpirations(
+  symbol: string,
+): Promise<InstrumentOptionExpirationsResponse> {
+  return apiFetch<InstrumentOptionExpirationsResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/options/expirations`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentOptionChain(
+  symbol: string,
+  expiry: string,
+): Promise<InstrumentOptionChainResponse> {
+  const sp = new URLSearchParams({ expiry })
+  return apiFetch<InstrumentOptionChainResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/options/chain?${sp.toString()}`,
+    { method: 'GET' },
+  )
 }
 
 export async function getInstrumentNews(

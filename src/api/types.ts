@@ -147,6 +147,12 @@ export interface BacktestTargetHistoryRow {
   targets: Record<string, unknown>
 }
 
+export interface BacktestGroupExposureRow {
+  date: string
+  gross_by_group: Record<string, unknown>
+  net_by_group: Record<string, unknown>
+}
+
 export interface BacktestResultPayload {
   job_id: string
   metrics: Record<string, unknown>
@@ -157,6 +163,7 @@ export interface BacktestResultPayload {
   drawdown_analysis?: unknown
   sharpe_analysis?: unknown
   target_history?: BacktestTargetHistoryRow[] | unknown[]
+  group_exposure_history?: BacktestGroupExposureRow[]
 }
 
 export interface DataSummaryRequest extends FinTsRequest {
@@ -379,4 +386,159 @@ export interface InstrumentOhlcvResponse {
   storage_error?: string | null
   storage_job_id?: number | null
   storage_skipped?: boolean
+}
+
+export type InstrumentKind =
+  | 'equity'
+  | 'etf'
+  | 'mutualfund'
+  | 'option'
+  | 'index'
+  | 'currency'
+  | 'future'
+  | 'crypto'
+  | 'structured'
+  | 'unknown'
+
+export type InstrumentStatement = 'income' | 'balance' | 'cashflow'
+
+export type InstrumentFinancialFrequency = 'quarterly' | 'annual'
+
+export interface InstrumentFeatureAvailability {
+  financials: boolean
+  holders: boolean
+  options_chain: boolean
+}
+
+export interface InstrumentValuationMetrics {
+  trailing_pe?: number | null
+  forward_pe?: number | null
+  trailing_eps?: number | null
+  forward_eps?: number | null
+  return_on_equity?: number | null
+  return_on_assets?: number | null
+  price_to_book?: number | null
+  price_to_sales?: number | null
+  debt_to_equity?: number | null
+}
+
+export interface InstrumentExecutive {
+  name?: string | null
+  title?: string | null
+  year_born?: number | null
+}
+
+export interface InstrumentCompanyProfile {
+  long_business_summary?: string | null
+  sector?: string | null
+  industry?: string | null
+  address_line1?: string | null
+  city?: string | null
+  state?: string | null
+  zip_code?: string | null
+  country?: string | null
+  phone?: string | null
+  website?: string | null
+  full_time_employees?: number | null
+}
+
+export interface InstrumentFundTopHolding {
+  symbol: string
+  name?: string | null
+  holding_percent?: number | null
+}
+
+export interface InstrumentFundSummary {
+  fund_family?: string | null
+  category?: string | null
+  expense_ratio?: number | null
+  yield_pct?: number | null
+  top_holdings?: InstrumentFundTopHolding[]
+}
+
+export interface InstrumentOptionContractSummary {
+  underlying_symbol?: string | null
+  strike?: number | null
+  expire_date?: string | null
+  contract_type?: string | null
+  last_price?: number | null
+  bid?: number | null
+  ask?: number | null
+  volume?: number | null
+  open_interest?: number | null
+  implied_volatility?: number | null
+}
+
+export interface InstrumentOverviewResponse {
+  symbol: string
+  instrument_kind: InstrumentKind
+  yahoo_quote_type?: string | null
+  short_name?: string | null
+  long_name?: string | null
+  exchange?: string | null
+  currency?: string | null
+  market_cap?: number | null
+  beta?: number | null
+  valuation: InstrumentValuationMetrics
+  company?: InstrumentCompanyProfile | null
+  fund?: InstrumentFundSummary | null
+  option_contract?: InstrumentOptionContractSummary | null
+  executives: InstrumentExecutive[]
+  features: InstrumentFeatureAvailability
+}
+
+export interface InstrumentFinancialLineRow {
+  label: string
+  values: (number | null)[]
+}
+
+export interface InstrumentFinancialStatementResponse {
+  symbol: string
+  statement: InstrumentStatement
+  frequency: InstrumentFinancialFrequency
+  periods: string[]
+  rows: InstrumentFinancialLineRow[]
+  truncated: boolean
+  available: boolean
+}
+
+export interface InstrumentHolderRow {
+  holder: string
+  date_reported?: string | null
+  shares?: number | null
+  value?: number | null
+  percent_held?: number | null
+  percent_change?: number | null
+}
+
+export interface InstrumentHoldersResponse {
+  symbol: string
+  institutional: InstrumentHolderRow[]
+  mutual_funds: InstrumentHolderRow[]
+  available_institutional: boolean
+  available_mutual_funds: boolean
+}
+
+export interface InstrumentOptionExpirationsResponse {
+  symbol: string
+  expirations: string[]
+  available: boolean
+}
+
+export interface InstrumentOptionLegRow {
+  strike: number
+  last?: number | null
+  bid?: number | null
+  ask?: number | null
+  volume?: number | null
+  open_interest?: number | null
+  implied_volatility?: number | null
+}
+
+export interface InstrumentOptionChainResponse {
+  symbol: string
+  expiry: string
+  calls: InstrumentOptionLegRow[]
+  puts: InstrumentOptionLegRow[]
+  available: boolean
 }

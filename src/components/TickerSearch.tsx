@@ -2,7 +2,7 @@ import { Box, Button, Popover, ScrollAreaAutosize, Stack, Text, TextInput } from
 import { useCallback, useEffect, useId, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { searchInstruments } from '../api/endpoints'
+import { searchInstruments, instrumentDetailPath } from '../api/endpoints'
 import type { InstrumentSearchQuote } from '../api/types'
 
 const DEBOUNCE_MS = 300
@@ -44,10 +44,10 @@ export default function TickerSearch() {
   )
 
   const goInstrument = useCallback(
-    (symbol: string) => {
+    (symbol: string, quoteType?: string | null) => {
       setOpened(false)
       setQ('')
-      navigate(`/instruments/${encodeURIComponent(symbol)}`)
+      navigate(instrumentDetailPath(symbol, quoteType))
     },
     [navigate],
   )
@@ -131,7 +131,7 @@ export default function TickerSearch() {
                 }}
                 role="option"
                 onMouseDown={(ev) => ev.preventDefault()}
-                onClick={() => goInstrument(row.symbol)}
+                onClick={() => goInstrument(row.symbol, row.quote_type)}
               >
                 <Stack gap={2} align="flex-start">
                   <Text size="sm" fw={600} ff="monospace" style={{ fontVariantNumeric: 'tabular-nums' }}>

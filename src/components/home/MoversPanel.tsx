@@ -10,10 +10,11 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getMarketMovers } from '../../api/endpoints'
+import { getMarketMovers, instrumentDetailPath } from '../../api/endpoints'
 import type { MoversKind } from '../../api/types'
 import { useMantineTableDensity } from '../../hooks/useMantineTableDensity'
 import ApiErrorAlert from '../ApiErrorAlert'
+import { TableRowsSkeleton } from './homeDashboardSkeletons'
 import { SignedPctText } from '../../lib/signedPct'
 
 const TABS: { id: MoversKind; label: string }[] = [
@@ -51,9 +52,15 @@ export default function MoversPanel() {
         />
         <ApiErrorAlert error={q.error} />
         {q.isLoading && (
-          <Text c="dimmed" size="sm">
-            Loading movers…
-          </Text>
+          <TableRowsSkeleton
+            tableProps={tableProps}
+            columnCount={4}
+            rowCount={8}
+            headers={['Ticker', 'Price', '%', 'Volume']}
+            minWidth={280}
+            mih={200}
+            mah={400}
+          />
         )}
         {!q.isLoading && q.data && (
           <Table.ScrollContainer minWidth={280} mih={200} mah={400}>
@@ -79,7 +86,7 @@ export default function MoversPanel() {
                   q.data.rows.map((r) => (
                     <Table.Tr key={r.ticker}>
                       <Table.Td>
-                        <Anchor component={Link} to={`/instruments/${encodeURIComponent(r.ticker)}`} ff="monospace" size="sm">
+                        <Anchor component={Link} to={instrumentDetailPath(r.ticker)} ff="monospace" size="sm">
                           {r.ticker}
                         </Anchor>
                       </Table.Td>

@@ -30,6 +30,12 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: 'failed', label: 'failed' },
 ]
 
+function formatSummaryNumber(v: unknown, opts: { suffix?: string; decimals?: number } = {}): string {
+  if (v === null || v === undefined || typeof v !== 'number' || Number.isNaN(v)) return '—'
+  const { suffix = '', decimals = 2 } = opts
+  return `${v.toFixed(decimals)}${suffix}`
+}
+
 export default function BacktestsListPage() {
   const density = useMantineTableDensity()
   const [limit, setLimit] = useState(50)
@@ -230,7 +236,7 @@ export default function BacktestsListPage() {
 
       {q.data && (
         <>
-          <Table.ScrollContainer minWidth={720}>
+          <Table.ScrollContainer minWidth={980}>
             <Table {...density} highlightOnHover striped>
               <Table.Thead>
                 <Table.Tr>
@@ -247,12 +253,27 @@ export default function BacktestsListPage() {
                   <Table.Th>Job ID</Table.Th>
                   <Table.Th>Alpha</Table.Th>
                   <Table.Th>Index</Table.Th>
+                  <Table.Th style={{ textAlign: 'right' }}>CAGR</Table.Th>
+                  <Table.Th style={{ textAlign: 'right' }}>Sharpe</Table.Th>
+                  <Table.Th style={{ textAlign: 'right' }}>Max DD</Table.Th>
+                  <Table.Th style={{ textAlign: 'right' }}>End value</Table.Th>
                   <Table.Th>Created</Table.Th>
                   <Table.Th w={100} />
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {rows.map((j) => (
+                {rows.map((j) => {
+                  const s = j.status === 'succeeded' && j.result_summary ? j.result_summary : null
+                  const cagr = s && typeof s.cagr_pct === 'number' ? formatSummaryNumber(s.cagr_pct, { suffix: '%' }) : '—'
+                  const sharpe =
+                    s && typeof s.sharpe_ratio === 'number' ? formatSummaryNumber(s.sharpe_ratio, { decimals: 3 }) : '—'
+                  const maxDd =
+                    s && typeof s.max_drawdown_pct === 'number'
+                      ? formatSummaryNumber(s.max_drawdown_pct, { suffix: '%' })
+                      : '—'
+                  const endVal =
+                    s && typeof s.end_value === 'number' ? formatSummaryNumber(s.end_value, { decimals: 0 }) : '—'
+                  return (
                   <Table.Tr key={j.id}>
                     <Table.Td>
                       <Checkbox
@@ -280,6 +301,26 @@ export default function BacktestsListPage() {
                         {j.index_code ?? '—'}
                       </Text>
                     </Table.Td>
+                    <Table.Td style={{ textAlign: 'right' }}>
+                      <Text size="sm" ff="monospace">
+                        {cagr}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td style={{ textAlign: 'right' }}>
+                      <Text size="sm" ff="monospace">
+                        {sharpe}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td style={{ textAlign: 'right' }}>
+                      <Text size="sm" ff="monospace">
+                        {maxDd}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td style={{ textAlign: 'right' }}>
+                      <Text size="sm" ff="monospace">
+                        {endVal}
+                      </Text>
+                    </Table.Td>
                     <Table.Td>{new Date(j.created_at).toLocaleString()}</Table.Td>
                     <Table.Td>
                       <Button
@@ -293,7 +334,8 @@ export default function BacktestsListPage() {
                       </Button>
                     </Table.Td>
                   </Table.Tr>
-                ))}
+                  )
+                })}
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>

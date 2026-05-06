@@ -2,6 +2,7 @@ import { Anchor, Card, Divider, Group, Stack, Text, Title } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { getMarketHeadlines } from '../../api/endpoints'
 import ApiErrorAlert from '../ApiErrorAlert'
+import { HeadlineListSkeleton } from './homeDashboardSkeletons'
 
 function fmtTime(iso: string | null | undefined): string {
   if (!iso) return '—'
@@ -26,11 +27,7 @@ export default function MarketHeadlines() {
       <Stack gap="md">
         <Title order={5}>Market headlines</Title>
         <ApiErrorAlert error={q.error} />
-        {q.isLoading && (
-          <Text c="dimmed" size="sm">
-            Loading headlines…
-          </Text>
-        )}
+        {q.isLoading && <HeadlineListSkeleton />}
         {!q.isLoading && q.data && (
           <Stack gap={0}>
             {q.data.headlines.length === 0 ? (
