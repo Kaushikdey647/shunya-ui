@@ -44,7 +44,8 @@ Full API setup is documented in the `**shunya**` repo: `**api/README.md**` (clon
 | ----------------- | --------------------------------------------- |
 | `npm run dev`     | Vite dev server with HMR                      |
 | `npm run build`   | `tsc -b` then production Vite build → `dist/` |
-| `npm run preview` | Serve the production build locally            |
+| `npm run preview` | Same as `npm run start` — `vite preview` on port 4173 |
+| `npm run start`   | **`vite preview`** on `0.0.0.0` (uses `$PORT` or 4173); matches Railway — use this instead of generic static servers for local prod checks |
 | `npm run lint`    | ESLint over the project                       |
 
 

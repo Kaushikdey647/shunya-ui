@@ -15,9 +15,9 @@ builder = "RAILPACK"
 buildCommand = "npm run build"
 
 [deploy]
-# Do not use `vite preview` here: Vite is a devDependency and Railpack's `npm ci`
-# omits dev deps in production — nothing listens on $PORT and healthchecks fail.
-# `serve` is a runtime dependency; `-s` enables SPA fallback (static files like /healthz win).
+# Use `vite preview` (see package.json `start`) — same server behavior as `vite dev`, unlike
+# generic static hosts (`serve`) which can break module workers / SPA edge cases. `vite` is a
+# production dependency so Railpack’s install includes it after `npm ci --omit=dev`.
 startCommand = "npm run start"
 healthcheckPath = "/healthz"
 healthcheckTimeout = 300
