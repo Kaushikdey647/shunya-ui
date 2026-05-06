@@ -1,5 +1,16 @@
+import {
+  Anchor,
+  Button,
+  Checkbox,
+  Group,
+  NumberInput,
+  Select,
+  Table,
+  Text,
+  Title,
+} from '@mantine/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   deleteBacktest,
@@ -9,22 +20,23 @@ import {
 } from '../api/endpoints'
 import type { BacktestJobStatus } from '../api/types'
 import ApiErrorAlert from '../components/ApiErrorAlert'
+import PageScaffold from '../components/PageScaffold'
+import { useMantineTableDensity } from '../hooks/useMantineTableDensity'
 
-const STATUS_OPTIONS: (BacktestJobStatus | '')[] = [
-  '',
-  'queued',
-  'running',
-  'succeeded',
-  'failed',
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: 'queued', label: 'queued' },
+  { value: 'running', label: 'running' },
+  { value: 'succeeded', label: 'succeeded' },
+  { value: 'failed', label: 'failed' },
 ]
 
 export default function BacktestsListPage() {
+  const density = useMantineTableDensity()
   const [limit, setLimit] = useState(50)
   const [offset, setOffset] = useState(0)
   const [alphaIdFilter, setAlphaIdFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState<BacktestJobStatus | ''>('')
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
-  const headerCbRef = useRef<HTMLInputElement>(null)
   const qc = useQueryClient()
 
   const alphasQ = useQuery({
@@ -58,13 +70,6 @@ export default function BacktestsListPage() {
   const allOnPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selected.has(id))
   const someOnPageSelected = pageIds.some((id) => selected.has(id))
-
-  useEffect(() => {
-    const el = headerCbRef.current
-    if (el) {
-      el.indeterminate = someOnPageSelected && !allOnPageSelected
-    }
-  }, [someOnPageSelected, allOnPageSelected])
 
   const delMut = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -123,99 +128,86 @@ export default function BacktestsListPage() {
     delMut.mutate(ids)
   }
 
-  return (
-    <div className="page-inner stack">
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ margin: 0 }}>Backtests</h1>
-        <Link to="/backtests/new" className="btn btn-primary">
-          New backtest
-        </Link>
-      </div>
+  const alphaOptions = useMemo(
+    () => (alphasQ.data ?? []).map((a) => ({ value: a.id, label: a.name })),
+    [alphasQ.data],
+  )
 
-      <div className="row" style={{ flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end' }}>
-        <label>
-          Alpha
-          <select
-            value={alphaIdFilter}
-            onChange={(e) => {
-              setAlphaIdFilter(e.target.value)
-              setOffset(0)
-            }}
-            style={{ minWidth: '14rem' }}
-            disabled={alphasQ.isLoading}
-          >
-            <option value="">All alphas</option>
-            {(alphasQ.data ?? []).map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Status
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value as BacktestJobStatus | '')
-              setOffset(0)
-            }}
-          >
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s || 'all'} value={s}>
-                {s === '' ? 'All' : s}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Limit
-          <input
-            type="number"
-            min={1}
-            max={200}
-            value={limit}
-            onChange={(e) => {
-              setLimit(Number(e.target.value) || 50)
-              setOffset(0)
-            }}
-            style={{ width: '4rem' }}
-          />
-        </label>
-        <label>
-          Offset
-          <input
-            type="number"
-            min={0}
-            value={offset}
-            onChange={(e) => setOffset(Number(e.target.value) || 0)}
-            style={{ width: '4rem' }}
-          />
-        </label>
-        <button
-          type="button"
-          className="btn"
-          disabled={offset === 0}
-          onClick={() => setOffset((o) => Math.max(0, o - limit))}
-        >
+  return (
+    <PageScaffold>
+      <Group justify="space-between" align="center" wrap="wrap">
+        <Title order={1} m={0}>
+          Backtests
+        </Title>
+        <Button component={Link} to="/backtests/new" color="yellow">
+          New backtest
+        </Button>
+      </Group>
+
+      <Group align="flex-end" gap="md" wrap="wrap">
+        <Select
+          label="Alpha"
+          placeholder="All alphas"
+          data={alphaOptions.filter((o) => o.value !== '')}
+          value={alphaIdFilter || null}
+          clearable
+          onChange={(v) => {
+            setAlphaIdFilter(v ?? '')
+            setOffset(0)
+          }}
+          disabled={alphasQ.isLoading}
+          searchable
+          w={260}
+        />
+        <Select
+          label="Status"
+          data={STATUS_OPTIONS}
+          value={statusFilter === '' ? null : statusFilter}
+          clearable
+          onChange={(v) => {
+            setStatusFilter((v ?? '') as BacktestJobStatus | '')
+            setOffset(0)
+          }}
+          w={160}
+        />
+        <NumberInput
+          label="Limit"
+          value={limit}
+          onChange={(v) => {
+            setLimit(Number(v) || 50)
+            setOffset(0)
+          }}
+          min={1}
+          max={200}
+          w={88}
+        />
+        <NumberInput
+          label="Offset"
+          value={offset}
+          onChange={(v) => setOffset(Number(v) || 0)}
+          min={0}
+          w={88}
+        />
+        <Button variant="default" disabled={offset === 0} onClick={() => setOffset((o) => Math.max(0, o - limit))}>
           Previous page
-        </button>
-        <button
-          type="button"
-          className="btn"
+        </Button>
+        <Button
+          variant="default"
           disabled={!q.data || q.data.length < limit}
           onClick={() => setOffset((o) => o + limit)}
         >
           Next page
-        </button>
-      </div>
+        </Button>
+      </Group>
 
       {selected.size > 0 && (
-        <div className="row" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <span className="muted">{selected.size} selected</span>
-          <button
-            type="button"
-            className="btn btn-danger"
+        <Group gap="md" wrap="wrap">
+          <Text size="sm" c="dimmed">
+            {selected.size} selected
+          </Text>
+          <Button
+            color="red"
+            variant="light"
             disabled={delMut.isPending}
             onClick={() => {
               const ids = rows.filter((j) => selected.has(j.id)).map((j) => j.id)
@@ -224,76 +216,94 @@ export default function BacktestsListPage() {
             }}
           >
             Delete selected
-          </button>
-        </div>
+          </Button>
+        </Group>
       )}
 
       <ApiErrorAlert error={q.error} />
       <ApiErrorAlert error={delMut.error} />
-      {q.isLoading && <p className="muted">Loading…</p>}
+      {q.isLoading && (
+        <Text c="dimmed" size="sm">
+          Loading…
+        </Text>
+      )}
 
       {q.data && (
-        <div className="table-wrap">
-          <table className="data">
-            <thead>
-              <tr>
-                <th style={{ width: '2.5rem' }}>
-                  <input
-                    ref={headerCbRef}
-                    type="checkbox"
-                    aria-label="Select all on this page"
-                    checked={allOnPageSelected}
-                    disabled={rows.length === 0 || delMut.isPending}
-                    onChange={toggleAllOnPage}
-                  />
-                </th>
-                <th>Status</th>
-                <th>Job ID</th>
-                <th>Alpha</th>
-                <th>Index</th>
-                <th>Created</th>
-                <th style={{ width: '6rem' }} />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((j) => (
-                <tr key={j.id}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(j.id)}
-                      disabled={delMut.isPending}
-                      aria-label={`Select job ${j.id}`}
-                      onChange={() => toggleOne(j.id)}
+        <>
+          <Table.ScrollContainer minWidth={720}>
+            <Table {...density} highlightOnHover striped>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th w={40}>
+                    <Checkbox
+                      aria-label="Select all on this page"
+                      checked={allOnPageSelected}
+                      indeterminate={someOnPageSelected && !allOnPageSelected}
+                      disabled={rows.length === 0 || delMut.isPending}
+                      onChange={toggleAllOnPage}
                     />
-                  </td>
-                  <td>{j.status}</td>
-                  <td>
-                    <Link to={`/backtests/${j.id}`} className="mono">
-                      {j.id}
-                    </Link>
-                  </td>
-                  <td>{j.alpha_name ?? <span className="muted mono">{j.alpha_id}</span>}</td>
-                  <td className="mono">{j.index_code ?? '—'}</td>
-                  <td>{new Date(j.created_at).toLocaleString()}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn btn-danger"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem' }}
-                      disabled={delMut.isPending}
-                      onClick={() => confirmDeleteJobs([j.id])}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {q.data.length === 0 && <p className="muted">No jobs.</p>}
-        </div>
+                  </Table.Th>
+                  <Table.Th>Status</Table.Th>
+                  <Table.Th>Job ID</Table.Th>
+                  <Table.Th>Alpha</Table.Th>
+                  <Table.Th>Index</Table.Th>
+                  <Table.Th>Created</Table.Th>
+                  <Table.Th w={100} />
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {rows.map((j) => (
+                  <Table.Tr key={j.id}>
+                    <Table.Td>
+                      <Checkbox
+                        checked={selected.has(j.id)}
+                        disabled={delMut.isPending}
+                        aria-label={`Select job ${j.id}`}
+                        onChange={() => toggleOne(j.id)}
+                      />
+                    </Table.Td>
+                    <Table.Td>{j.status}</Table.Td>
+                    <Table.Td>
+                      <Anchor component={Link} to={`/backtests/${j.id}`} ff="monospace" size="sm">
+                        {j.id}
+                      </Anchor>
+                    </Table.Td>
+                    <Table.Td>
+                      {j.alpha_name ?? (
+                        <Text ff="monospace" size="sm" c="dimmed">
+                          {j.alpha_id}
+                        </Text>
+                      )}
+                    </Table.Td>
+                    <Table.Td>
+                      <Text ff="monospace" size="sm">
+                        {j.index_code ?? '—'}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>{new Date(j.created_at).toLocaleString()}</Table.Td>
+                    <Table.Td>
+                      <Button
+                        size="compact-xs"
+                        color="red"
+                        variant="light"
+                        disabled={delMut.isPending}
+                        onClick={() => confirmDeleteJobs([j.id])}
+                      >
+                        Delete
+                      </Button>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+          {q.data.length === 0 && (
+            <Text c="dimmed" size="sm">
+              No jobs.
+            </Text>
+          )}
+        </>
       )}
-    </div>
+    </PageScaffold>
   )
 }

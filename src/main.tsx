@@ -1,14 +1,17 @@
 import './monacoSetup'
+import '@mantine/core/styles.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
+import { MantineProvider, localStorageColorSchemeManager } from '@mantine/core'
 import './index.css'
 import App from './App.tsx'
 import { initTableDensity } from './density'
-import { initTheme } from './theme'
+import LegacyThemeSync from './components/LegacyThemeSync'
+import { shunyaMantineTheme } from './mantine/theme'
+import { SHUNYA_THEME_STORAGE_KEY, resolveInitialTheme } from './theme'
 
-initTheme()
 initTableDensity()
 
 const queryClient = new QueryClient({
@@ -20,12 +23,23 @@ const queryClient = new QueryClient({
   },
 })
 
+const colorSchemeManager = localStorageColorSchemeManager({
+  key: SHUNYA_THEME_STORAGE_KEY,
+})
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </QueryClientProvider>
+    <MantineProvider
+      theme={shunyaMantineTheme}
+      defaultColorScheme={resolveInitialTheme()}
+      colorSchemeManager={colorSchemeManager}
+    >
+      <LegacyThemeSync />
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </QueryClientProvider>
+    </MantineProvider>
   </StrictMode>,
 )

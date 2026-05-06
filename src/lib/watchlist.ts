@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'shunya_watchlist_v1'
 
-const SYMBOL_PATTERN = /^[A-Z0-9^.\-]{1,32}$/i
+const SYMBOL_PATTERN = /^[-A-Z0-9^.]{1,32}$/i
 
 export function readWatchlist(): string[] {
   try {

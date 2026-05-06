@@ -27,9 +27,9 @@ html[data-theme='light'] {
   --text-strong: #0c0e15;
   --text-muted: #787b86;
   /* Primary CTA / buttons only — chrome links use --link */
-  --accent: #2962ff;
-  --accent-muted: rgba(41, 98, 255, 0.12);
-  --focus-ring: #2962ff;
+  --accent: #c9a017;
+  --accent-muted: rgba(201, 160, 23, 0.14);
+  --focus-ring: #b8860b;
   --link: #5c6570;
   --chrome-accent: #3d4450;
   --chrome-accent-muted: rgba(61, 68, 80, 0.12);
@@ -56,9 +56,9 @@ html[data-theme='dark'] {
   --text: #d1d4dc;
   --text-strong: #f0f3fa;
   --text-muted: #787b86;
-  --accent: #2962ff;
-  --accent-muted: rgba(41, 98, 255, 0.2);
-  --focus-ring: #5b8cff;
+  --accent: #e6bd20;
+  --accent-muted: rgba(230, 189, 32, 0.22);
+  --focus-ring: #f5cf45;
   --link: #9ca3af;
   --chrome-accent: #c8cdd8;
   --chrome-accent-muted: rgba(200, 205, 216, 0.12);

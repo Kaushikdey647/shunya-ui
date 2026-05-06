@@ -1,3 +1,4 @@
+import { Anchor, Paper, ScrollArea, Stack, Text, Title, useMantineTheme } from '@mantine/core'
 import { useEffect, useMemo, useRef } from 'react'
 import type { InstrumentTickerNewsItem } from '../api/types'
 import { snapNewsToBarTime } from '../utils/chartBarTimes'
@@ -25,6 +26,7 @@ type Props = {
 }
 
 export default function InstrumentContextFeed({ news, barTimes, focusBarUnix }: Props) {
+  const theme = useMantineTheme()
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const sorted = useMemo(() => {
@@ -42,55 +44,83 @@ export default function InstrumentContextFeed({ news, barTimes, focusBarUnix }: 
   }, [focusBarUnix])
 
   return (
-    <aside className="instrument-split-feed" aria-label="Context feed">
-      <h2 className="instrument-feed-heading">Context</h2>
-      <p className="muted small" style={{ marginBottom: '0.65rem' }}>
+    <Paper
+      withBorder
+      p="md"
+      radius="md"
+      component="aside"
+      aria-label="Context feed"
+      style={{ minHeight: 200 }}
+    >
+      <Title order={2} size="h5" mb="xs">
+        Context
+      </Title>
+      <Text c="dimmed" size="xs" mb="md">
         News on the price timeline. Move the crosshair on the chart to scroll matching items.
-      </p>
-      <div ref={scrollRef} className="instrument-feed-scroll">
-        {sorted.length === 0 ? (
-          <p className="muted">No news for this symbol.</p>
-        ) : (
-          sorted.map((item, i) => {
-            const barU = snappedBarUtc(item, barTimes)
-            const focused = barU != null && focusBarUnix != null && barU === focusBarUnix
-            const href = item.link?.trim()
-              ? item.link.trim()
-              : undefined
-            return (
-              <article
-                key={`${item.title}-${String(item.story_id ?? i)}`}
-                className={`instrument-feed-item${focused ? ' instrument-feed-item-focused' : ''}`}
-                data-snapped-bar={barU ?? undefined}
-              >
-                {item.published_at && (
-                  <time className="instrument-feed-time tabular-nums" dateTime={item.published_at}>
-                    {formatNewsWhen(item.published_at)}
-                  </time>
-                )}
-                {href ? (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="instrument-feed-title-link"
-                  >
-                    {item.title}
-                  </a>
-                ) : (
-                  <span className="instrument-feed-title">{item.title}</span>
-                )}
-                {item.publisher?.trim() && (
-                  <div className="instrument-feed-meta muted small">{item.publisher.trim()}</div>
-                )}
-                {item.summary?.trim() && (
-                  <p className="instrument-feed-summary muted small">{item.summary.trim()}</p>
-                )}
-              </article>
-            )
-          })
-        )}
-      </div>
-    </aside>
+      </Text>
+      <ScrollArea h={420} viewportRef={scrollRef} type="auto">
+        <Stack gap="sm" pr="xs">
+          {sorted.length === 0 ? (
+            <Text c="dimmed" size="sm">
+              No news for this symbol.
+            </Text>
+          ) : (
+            sorted.map((item, i) => {
+              const barU = snappedBarUtc(item, barTimes)
+              const focused = barU != null && focusBarUnix != null && barU === focusBarUnix
+              const href = item.link?.trim() ? item.link.trim() : undefined
+              return (
+                <Paper
+                  key={`${item.title}-${String(item.story_id ?? i)}`}
+                  p="sm"
+                  radius="sm"
+                  withBorder
+                  data-snapped-bar={barU ?? undefined}
+                  style={{
+                    borderColor: focused ? theme.colors.yellow[5] : undefined,
+                    background: focused
+                      ? `color-mix(in srgb, ${theme.colors.yellow[4]} 12%, transparent)`
+                      : undefined,
+                  }}
+                >
+                  <Stack gap={6}>
+                    {item.published_at && (
+                      <Text
+                        component="time"
+                        dateTime={item.published_at}
+                        size="xs"
+                        c="dimmed"
+                        style={{ fontVariantNumeric: 'tabular-nums' }}
+                      >
+                        {formatNewsWhen(item.published_at)}
+                      </Text>
+                    )}
+                    {href ? (
+                      <Anchor href={href} target="_blank" rel="noopener noreferrer" size="sm" fw={600}>
+                        {item.title}
+                      </Anchor>
+                    ) : (
+                      <Text size="sm" fw={600}>
+                        {item.title}
+                      </Text>
+                    )}
+                    {item.publisher?.trim() && (
+                      <Text c="dimmed" size="xs">
+                        {item.publisher.trim()}
+                      </Text>
+                    )}
+                    {item.summary?.trim() && (
+                      <Text c="dimmed" size="xs" lineClamp={4}>
+                        {item.summary.trim()}
+                      </Text>
+                    )}
+                  </Stack>
+                </Paper>
+              )
+            })
+          )}
+        </Stack>
+      </ScrollArea>
+    </Paper>
   )
 }

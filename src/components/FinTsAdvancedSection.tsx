@@ -1,13 +1,30 @@
+import {
+  Accordion,
+  Checkbox,
+  NumberInput,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core'
 import type { Dispatch, SetStateAction } from 'react'
 import type { BarUnit, FeatureMode, MarketDataProvider, TradingAxisMode } from '../api/types'
 import type { FinTsAdvancedState } from '../finTs/advancedState'
 
+const BAR_UNITS: BarUnit[] = [
+  'SECONDS',
+  'MINUTES',
+  'HOURS',
+  'DAYS',
+  'WEEKS',
+  'MONTHS',
+  'YEARS',
+]
+
 type Props = {
   state: FinTsAdvancedState
   setState: Dispatch<SetStateAction<FinTsAdvancedState>>
-  /** Index backtests: OHLCV from Timescale only; no Yahoo classifications in-browser. */
   timescaleOnly?: boolean
-  /** Server forces daily bars; hide bar_spec controls. */
   hideBarSpec?: boolean
 }
 
@@ -21,202 +38,152 @@ export default function FinTsAdvancedSection({
   const set = setState
 
   return (
-    <details className="advanced">
-      <summary>Advanced (fin_ts)</summary>
-      <div className="form-grid" style={{ marginTop: '0.75rem' }}>
-        {!hideBarSpec && (
-          <>
-            <label className="row">
-              <input
-                type="checkbox"
-                checked={a.useBarSpec}
-                onChange={(e) =>
-                  set((s) => ({ ...s, useBarSpec: e.target.checked }))
-                }
-              />
-              Set bar_spec
-            </label>
-            {a.useBarSpec && (
+    <Accordion variant="separated" radius="md">
+      <Accordion.Item value="fin-ts-adv">
+        <Accordion.Control>Advanced (fin_ts)</Accordion.Control>
+        <Accordion.Panel>
+          <Stack gap="md" mt="xs">
+            {!hideBarSpec && (
               <>
-                <label>
-                  Bar unit
-                  <select
-                    value={a.barUnit}
-                    onChange={(e) =>
-                      set((s) => ({ ...s, barUnit: e.target.value as BarUnit }))
-                    }
-                  >
-                    {(
-                      [
-                        'SECONDS',
-                        'MINUTES',
-                        'HOURS',
-                        'DAYS',
-                        'WEEKS',
-                        'MONTHS',
-                        'YEARS',
-                      ] as BarUnit[]
-                    ).map((u) => (
-                      <option key={u} value={u}>
-                        {u}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Bar step
-                  <input
-                    type="number"
-                    min={1}
-                    value={a.barStep}
-                    onChange={(e) =>
-                      set((s) => ({
-                        ...s,
-                        barStep: Number(e.target.value) || 1,
-                      }))
-                    }
-                  />
-                </label>
+                <Checkbox
+                  label="Set bar_spec"
+                  checked={a.useBarSpec}
+                  onChange={(e) => set((s) => ({ ...s, useBarSpec: e.currentTarget.checked }))}
+                />
+                {a.useBarSpec && (
+                  <Stack gap="md">
+                    <Select
+                      label="Bar unit"
+                      data={BAR_UNITS.map((u) => ({ value: u, label: u }))}
+                      value={a.barUnit}
+                      onChange={(v) =>
+                        v && set((s) => ({ ...s, barUnit: v as BarUnit }))
+                      }
+                    />
+                    <NumberInput
+                      label="Bar step"
+                      min={1}
+                      value={a.barStep}
+                      onChange={(v) =>
+                        set((s) => ({
+                          ...s,
+                          barStep: typeof v === 'number' ? v : 1,
+                        }))
+                      }
+                    />
+                  </Stack>
+                )}
               </>
             )}
-          </>
-        )}
-        {hideBarSpec && (
-          <p className="muted" style={{ gridColumn: '1 / -1' }}>
-            Bar cadence is fixed to <span className="mono">DAYS</span> step <span className="mono">1</span> for
-            backtests.
-          </p>
-        )}
-        {timescaleOnly ? (
-          <p className="muted" style={{ gridColumn: '1 / -1' }}>
-            Market data: Timescale only (index universe). Classifications load from DB when
-            available.
-          </p>
-        ) : (
-          <label>
-            Market data provider
-            <select
-              value={a.marketDataProvider}
-              onChange={(e) =>
+            {hideBarSpec && (
+              <Text size="sm" c="dimmed">
+                Bar cadence is fixed to <Text span ff="monospace">DAYS</Text> step{' '}
+                <Text span ff="monospace">
+                  1
+                </Text>{' '}
+                for backtests.
+              </Text>
+            )}
+            {timescaleOnly ? (
+              <Text size="sm" c="dimmed">
+                Market data: Timescale only (index universe). Classifications load from DB when
+                available.
+              </Text>
+            ) : (
+              <Select
+                label="Market data provider"
+                data={[
+                  { value: 'auto', label: 'auto' },
+                  { value: 'timescale', label: 'timescale' },
+                  { value: 'yfinance', label: 'yfinance' },
+                ]}
+                value={a.marketDataProvider}
+                onChange={(v) =>
+                  v &&
+                  set((s) => ({
+                    ...s,
+                    marketDataProvider: v as MarketDataProvider,
+                  }))
+                }
+              />
+            )}
+            <Select
+              label="Feature mode"
+              data={[
+                { value: 'full', label: 'full' },
+                { value: 'ohlcv_only', label: 'ohlcv_only' },
+              ]}
+              value={a.featureMode}
+              onChange={(v) =>
+                v &&
                 set((s) => ({
                   ...s,
-                  marketDataProvider: e.target.value as MarketDataProvider,
+                  featureMode: v as FeatureMode,
                 }))
               }
-            >
-              <option value="auto">auto</option>
-              <option value="timescale">timescale</option>
-              <option value="yfinance">yfinance</option>
-            </select>
-          </label>
-        )}
-        <label>
-          Feature mode
-          <select
-            value={a.featureMode}
-            onChange={(e) =>
-              set((s) => ({
-                ...s,
-                featureMode: e.target.value as FeatureMode,
-              }))
-            }
-          >
-            <option value="full">full</option>
-            <option value="ohlcv_only">ohlcv_only</option>
-          </select>
-        </label>
-        <label>
-          Trading axis mode
-          <select
-            value={a.tradingAxisMode}
-            onChange={(e) =>
-              set((s) => ({
-                ...s,
-                tradingAxisMode: e.target.value as TradingAxisMode,
-              }))
-            }
-          >
-            <option value="observed">observed</option>
-            <option value="canonical">canonical</option>
-          </select>
-        </label>
-        {!timescaleOnly && (
-          <label className="row">
-            <input
-              type="checkbox"
-              checked={a.attachYf}
-              onChange={(e) =>
-                set((s) => ({ ...s, attachYf: e.target.checked }))
+            />
+            <Select
+              label="Trading axis mode"
+              data={[
+                { value: 'observed', label: 'observed' },
+                { value: 'canonical', label: 'canonical' },
+              ]}
+              value={a.tradingAxisMode}
+              onChange={(v) =>
+                v &&
+                set((s) => ({
+                  ...s,
+                  tradingAxisMode: v as TradingAxisMode,
+                }))
               }
             />
-            attach_yfinance_classifications
-          </label>
-        )}
-        {!timescaleOnly && (
-          <label className="row">
-            <input
-              type="checkbox"
-              checked={a.attachFund}
+            {!timescaleOnly && (
+              <Checkbox
+                label="attach_yfinance_classifications"
+                checked={a.attachYf}
+                onChange={(e) => set((s) => ({ ...s, attachYf: e.currentTarget.checked }))}
+              />
+            )}
+            {!timescaleOnly && (
+              <Checkbox
+                label="attach_fundamentals"
+                checked={a.attachFund}
+                onChange={(e) => set((s) => ({ ...s, attachFund: e.currentTarget.checked }))}
+              />
+            )}
+            <Checkbox
+              label="strict_trading_grid"
+              checked={a.strictTradingGrid}
+              onChange={(e) => set((s) => ({ ...s, strictTradingGrid: e.currentTarget.checked }))}
+            />
+            <Checkbox
+              label="strict_provider_universe"
+              checked={a.strictProviderUniverse}
               onChange={(e) =>
-                set((s) => ({ ...s, attachFund: e.target.checked }))
+                set((s) => ({ ...s, strictProviderUniverse: e.currentTarget.checked }))
               }
             />
-            attach_fundamentals
-          </label>
-        )}
-        <label className="row">
-          <input
-            type="checkbox"
-            checked={a.strictTradingGrid}
-            onChange={(e) =>
-              set((s) => ({ ...s, strictTradingGrid: e.target.checked }))
-            }
-          />
-          strict_trading_grid
-        </label>
-        <label className="row">
-          <input
-            type="checkbox"
-            checked={a.strictProviderUniverse}
-            onChange={(e) =>
-              set((s) => ({ ...s, strictProviderUniverse: e.target.checked }))
-            }
-          />
-          strict_provider_universe
-        </label>
-        <label className="row">
-          <input
-            type="checkbox"
-            checked={a.strictOhlcv}
-            onChange={(e) =>
-              set((s) => ({ ...s, strictOhlcv: e.target.checked }))
-            }
-          />
-          strict_ohlcv
-        </label>
-        <label className="row">
-          <input
-            type="checkbox"
-            checked={a.strictEmpty}
-            onChange={(e) =>
-              set((s) => ({ ...s, strictEmpty: e.target.checked }))
-            }
-          />
-          strict_empty
-        </label>
-        <label>
-          require_history_bars (optional)
-          <input
-            type="number"
-            min={1}
-            value={a.requireHistoryBars}
-            onChange={(e) =>
-              set((s) => ({ ...s, requireHistoryBars: e.target.value }))
-            }
-            placeholder="empty = omit"
-          />
-        </label>
-      </div>
-    </details>
+            <Checkbox
+              label="strict_ohlcv"
+              checked={a.strictOhlcv}
+              onChange={(e) => set((s) => ({ ...s, strictOhlcv: e.currentTarget.checked }))}
+            />
+            <Checkbox
+              label="strict_empty"
+              checked={a.strictEmpty}
+              onChange={(e) => set((s) => ({ ...s, strictEmpty: e.currentTarget.checked }))}
+            />
+            <TextInput
+              label="require_history_bars (optional)"
+              type="number"
+              min={1}
+              value={a.requireHistoryBars}
+              onChange={(e) => set((s) => ({ ...s, requireHistoryBars: e.target.value }))}
+              placeholder="empty = omit"
+            />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+    </Accordion>
   )
 }

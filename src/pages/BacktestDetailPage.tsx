@@ -1,13 +1,29 @@
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Code,
+  Paper,
+  ScrollArea,
+  Stack,
+  Table,
+  Text,
+  Title,
+} from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getBacktest, getBacktestResult } from '../api/endpoints'
 import ApiErrorAlert from '../components/ApiErrorAlert'
 import BacktestResultCharts from '../components/BacktestResultCharts'
+import PageScaffold from '../components/PageScaffold'
+import { useMantineTableDensity } from '../hooks/useMantineTableDensity'
 
 const TABLE_PREVIEW = 100
 
 function RowTable({ rows }: { rows: Record<string, unknown>[] }) {
+  const density = useMantineTableDensity()
   const [expanded, setExpanded] = useState(false)
   const keys = useMemo(() => {
     const first = rows[0]
@@ -16,45 +32,45 @@ function RowTable({ rows }: { rows: Record<string, unknown>[] }) {
   }, [rows])
 
   if (rows.length === 0) {
-    return <p className="muted">No rows.</p>
+    return (
+      <Text c="dimmed" size="sm">
+        No rows.
+      </Text>
+    )
   }
 
   const shown = expanded ? rows : rows.slice(0, TABLE_PREVIEW)
 
   return (
-    <div className="stack">
-      <div className="table-wrap">
-        <table className="data">
-          <thead>
-            <tr>
+    <Stack gap="sm">
+      <ScrollArea type="auto">
+        <Table {...density} striped highlightOnHover style={{ minWidth: 480 }}>
+          <Table.Thead>
+            <Table.Tr>
               {keys.map((k) => (
-                <th key={k}>{k}</th>
+                <Table.Th key={k}>{k}</Table.Th>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {shown.map((row, i) => (
-              <tr key={i}>
+              <Table.Tr key={i}>
                 {keys.map((k) => (
-                  <td key={k} className="mono">
+                  <Table.Td key={k} ff="monospace" style={{ whiteSpace: 'pre-wrap', maxWidth: 320 }}>
                     {formatCell(row[k])}
-                  </td>
+                  </Table.Td>
                 ))}
-              </tr>
+              </Table.Tr>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </Table.Tbody>
+        </Table>
+      </ScrollArea>
       {rows.length > TABLE_PREVIEW && (
-        <button
-          type="button"
-          className="btn"
-          onClick={() => setExpanded((e) => !e)}
-        >
+        <Button variant="default" size="compact-sm" onClick={() => setExpanded((e) => !e)}>
           {expanded ? 'Show less' : `Show all (${rows.length} rows)`}
-        </button>
+        </Button>
       )}
-    </div>
+    </Stack>
   )
 }
 
@@ -66,8 +82,20 @@ function formatCell(v: unknown): string {
   return String(v)
 }
 
+function MetaRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Stack gap={4}>
+      <Text c="dimmed" size="xs">
+        {label}
+      </Text>
+      <div>{children}</div>
+    </Stack>
+  )
+}
+
 export default function BacktestDetailPage() {
   const { jobId } = useParams<{ jobId: string }>()
+  const density = useMantineTableDensity()
   const [rawJson, setRawJson] = useState(false)
 
   const jobQ = useQuery({
@@ -88,146 +116,147 @@ export default function BacktestDetailPage() {
 
   if (!jobId) {
     return (
-      <div className="page-inner">
-        <p className="muted">Missing job id.</p>
-      </div>
+      <PageScaffold>
+        <Text c="dimmed">Missing job id.</Text>
+      </PageScaffold>
     )
   }
 
   return (
-    <div className="page-inner stack">
-      <div className="row">
-        <Link to="/backtests" className="btn">
-          ← Backtests
-        </Link>
-      </div>
+    <PageScaffold>
+      <Button component={Link} to="/backtests" variant="default">
+        ← Backtests
+      </Button>
 
       <ApiErrorAlert error={jobQ.error} />
-      {jobQ.isLoading && <p className="muted">Loading job…</p>}
+      {jobQ.isLoading && (
+        <Text c="dimmed" size="sm">
+          Loading job…
+        </Text>
+      )}
 
       {jobQ.data && (
         <>
-          <h1>Backtest job</h1>
-          <p className="mono muted">id: {jobQ.data.id}</p>
-          <dl className="row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-            <div>
-              <dt className="muted">Status</dt>
-              <dd>
-                <strong>{jobQ.data.status}</strong>
-              </dd>
-            </div>
-            <div>
-              <dt className="muted">Alpha id</dt>
-              <dd className="mono">{jobQ.data.alpha_id}</dd>
-            </div>
-            {jobQ.data.alpha_name && (
-              <div>
-                <dt className="muted">Alpha name</dt>
-                <dd>{jobQ.data.alpha_name}</dd>
-              </div>
-            )}
-            {jobQ.data.index_code && (
-              <div>
-                <dt className="muted">Index</dt>
-                <dd className="mono">{jobQ.data.index_code}</dd>
-              </div>
-            )}
-            <div>
-              <dt className="muted">Include test period in results</dt>
-              <dd>{jobQ.data.include_test_period_in_results ? 'Yes' : 'No (tune window only)'}</dd>
-            </div>
-            <div>
-              <dt className="muted">Created</dt>
-              <dd>{new Date(jobQ.data.created_at).toLocaleString()}</dd>
-            </div>
-            {jobQ.data.started_at && (
-              <div>
-                <dt className="muted">Started</dt>
-                <dd>{new Date(jobQ.data.started_at).toLocaleString()}</dd>
-              </div>
-            )}
-            {jobQ.data.finished_at && (
-              <div>
-                <dt className="muted">Finished</dt>
-                <dd>{new Date(jobQ.data.finished_at).toLocaleString()}</dd>
-              </div>
-            )}
-            {jobQ.data.error_message && (
-              <div>
-                <dt className="muted">Error</dt>
-                <dd className="alert alert-error" style={{ margin: 0 }}>
-                  <pre
-                    className="mono"
-                    style={{
-                      whiteSpace: 'pre-wrap',
-                      margin: 0,
-                      maxHeight: '28rem',
-                      overflow: 'auto',
-                      fontSize: '0.8125rem',
-                    }}
-                  >
-                    {jobQ.data.error_message}
-                  </pre>
-                </dd>
-              </div>
-            )}
-            {jobQ.data.result_summary && (
-              <div>
-                <dt className="muted">Result summary</dt>
-                <dd>
-                  <pre className="mono" style={{ whiteSpace: 'pre-wrap' }}>
+          <Title order={1}>Backtest job</Title>
+          <Text ff="monospace" c="dimmed" size="sm">
+            id: {jobQ.data.id}
+          </Text>
+
+          <Paper withBorder p="md" radius="md">
+            <Stack gap="md">
+              <MetaRow label="Status">
+                <Text fw={700}>{jobQ.data.status}</Text>
+              </MetaRow>
+              <MetaRow label="Alpha id">
+                <Text ff="monospace">{jobQ.data.alpha_id}</Text>
+              </MetaRow>
+              {jobQ.data.alpha_name && (
+                <MetaRow label="Alpha name">
+                  <Text>{jobQ.data.alpha_name}</Text>
+                </MetaRow>
+              )}
+              {jobQ.data.index_code && (
+                <MetaRow label="Index">
+                  <Text ff="monospace">{jobQ.data.index_code}</Text>
+                </MetaRow>
+              )}
+              <MetaRow label="Include test period in results">
+                <Text>
+                  {jobQ.data.include_test_period_in_results ? 'Yes' : 'No (tune window only)'}
+                </Text>
+              </MetaRow>
+              <MetaRow label="Created">
+                <Text>{new Date(jobQ.data.created_at).toLocaleString()}</Text>
+              </MetaRow>
+              {jobQ.data.started_at && (
+                <MetaRow label="Started">
+                  <Text>{new Date(jobQ.data.started_at).toLocaleString()}</Text>
+                </MetaRow>
+              )}
+              {jobQ.data.finished_at && (
+                <MetaRow label="Finished">
+                  <Text>{new Date(jobQ.data.finished_at).toLocaleString()}</Text>
+                </MetaRow>
+              )}
+              {jobQ.data.error_message && (
+                <MetaRow label="Error">
+                  <Alert color="red" variant="light">
+                    <ScrollArea h={320}>
+                      <Code block ff="monospace" fz="xs">
+                        {jobQ.data.error_message}
+                      </Code>
+                    </ScrollArea>
+                  </Alert>
+                </MetaRow>
+              )}
+              {jobQ.data.result_summary && (
+                <MetaRow label="Result summary">
+                  <Code block ff="monospace" fz="xs">
                     {JSON.stringify(jobQ.data.result_summary, null, 2)}
-                  </pre>
-                </dd>
-              </div>
-            )}
-          </dl>
+                  </Code>
+                </MetaRow>
+              )}
+            </Stack>
+          </Paper>
 
           {jobQ.data.status === 'succeeded' && (
-            <section className="stack">
-              <h2>Result</h2>
-              <label className="row">
-                <input
-                  type="checkbox"
-                  checked={rawJson}
-                  onChange={(e) => setRawJson(e.target.checked)}
-                />
-                Show raw JSON
-              </label>
+            <Stack gap="md">
+              <Title order={2} size="h4">
+                Result
+              </Title>
+              <Checkbox
+                label="Show raw JSON"
+                checked={rawJson}
+                onChange={(e) => setRawJson(e.currentTarget.checked)}
+              />
               <ApiErrorAlert error={resultQ.error} />
-              {resultQ.isLoading && <p className="muted">Loading result…</p>}
+              {resultQ.isLoading && (
+                <Text c="dimmed" size="sm">
+                  Loading result…
+                </Text>
+              )}
               {resultQ.data && rawJson && (
-                <pre className="mono" style={{ whiteSpace: 'pre-wrap', fontSize: '0.75rem' }}>
+                <Code block ff="monospace" fz="xs">
                   {JSON.stringify(resultQ.data, null, 2)}
-                </pre>
+                </Code>
               )}
               {resultQ.data && !rawJson && (
                 <>
-                  <h3>Overview</h3>
-                  <BacktestResultCharts data={resultQ.data} />
-                  <h3>Metrics</h3>
-                  <div className="table-wrap">
-                    <table className="data">
-                      <tbody>
+                  <Title order={3} size="h5">
+                    Overview
+                  </Title>
+                  <Paper p="md" radius="md" withBorder>
+                    <BacktestResultCharts data={resultQ.data} />
+                  </Paper>
+                  <Title order={3} size="h5">
+                    Metrics
+                  </Title>
+                  <Table.ScrollContainer minWidth={400}>
+                    <Table {...density} striped>
+                      <Table.Tbody>
                         {Object.entries(resultQ.data.metrics).map(([k, v]) => (
-                          <tr key={k}>
-                            <th>{k}</th>
-                            <td className="mono">{formatCell(v)}</td>
-                          </tr>
+                          <Table.Tr key={k}>
+                            <Table.Th w="40%">{k}</Table.Th>
+                            <Table.Td ff="monospace">{formatCell(v)}</Table.Td>
+                          </Table.Tr>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <h3>Equity curve (table)</h3>
+                      </Table.Tbody>
+                    </Table>
+                  </Table.ScrollContainer>
+                  <Title order={3} size="h5">
+                    Equity curve (table)
+                  </Title>
                   <RowTable rows={resultQ.data.equity_curve} />
-                  <h3>Turnover history (table)</h3>
+                  <Title order={3} size="h5">
+                    Turnover history (table)
+                  </Title>
                   <RowTable rows={resultQ.data.turnover_history} />
                 </>
               )}
-            </section>
+            </Stack>
           )}
         </>
       )}
-    </div>
+    </PageScaffold>
   )
 }

@@ -1,5 +1,15 @@
+import {
+  Anchor,
+  Button,
+  Card,
+  Group,
+  Stack,
+  Table,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { ReactElement } from 'react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { postMarketSnapshot } from '../../api/endpoints'
@@ -8,21 +18,13 @@ import {
   readWatchlist,
   removeWatchlistSymbol,
 } from '../../lib/watchlist'
+import { SignedPctText } from '../../lib/signedPct'
+import { useMantineTableDensity } from '../../hooks/useMantineTableDensity'
 import ApiErrorAlert from '../ApiErrorAlert'
-
-function pctCell(v: number | null | undefined): ReactElement {
-  if (v == null || !Number.isFinite(v)) return <span className="home-metric-muted">—</span>
-  const cls = v > 0 ? 'home-pct-pos' : v < 0 ? 'home-pct-neg' : 'home-metric-muted'
-  return (
-    <span className={cls}>
-      {v >= 0 ? '+' : ''}
-      {v.toFixed(2)}%
-    </span>
-  )
-}
 
 export default function WatchlistCard() {
   const qc = useQueryClient()
+  const tableProps = useMantineTableDensity()
   const [tickers, setTickers] = useState<string[]>(() => readWatchlist())
   const [input, setInput] = useState('')
 
@@ -44,80 +46,93 @@ export default function WatchlistCard() {
   }
 
   return (
-    <div className="dashboard-chart-panel home-engine-panel">
-      <div className="dashboard-chart-title">Watchlist</div>
-      <form className="home-watch-form row" onSubmit={onAdd}>
-        <input
-          className="home-watch-input"
-          placeholder="Ticker"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          maxLength={32}
-          aria-label="Add ticker"
-        />
-        <button type="submit" className="btn btn-primary">
-          Add
-        </button>
-      </form>
-      {tickers.length === 0 ? (
-        <p className="muted" style={{ margin: '0.35rem 0 0' }}>
-          Add symbols to track daily moves (stored in this browser).
-        </p>
-      ) : (
-        <>
-          <ApiErrorAlert error={snap.error} />
-          {snap.isLoading && <p className="muted">Loading quotes…</p>}
-          {!snap.isLoading && (
-            <div className="table-wrap home-engine-scroll">
-              <table className="data home-dense-table">
-                <thead>
-                  <tr>
-                    <th>Ticker</th>
-                    <th>Last</th>
-                    <th>Day %</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {tickers.map((sym) => {
-                    const row = bySym.get(sym)
-                    return (
-                      <tr key={sym}>
-                        <td>
-                          <Link to={`/instruments/${encodeURIComponent(sym)}`} className="mono">
-                            {sym}
-                          </Link>
-                        </td>
-                        <td className="mono">
-                          {row?.last != null && Number.isFinite(row.last)
-                            ? row.last.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                            : '—'}
-                        </td>
-                        <td className="mono">{pctCell(row?.pct_change_1d)}</td>
-                        <td>
-                          <button
-                            type="button"
-                            className="btn btn-danger"
-                            style={{ padding: '0.2rem 0.45rem', fontSize: '0.75rem' }}
-                            onClick={() => {
-                              setTickers(removeWatchlistSymbol(sym))
-                              void qc.invalidateQueries({
-                                queryKey: ['market', 'snapshot', 'watchlist'],
-                              })
-                            }}
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      )}
-    </div>
+    <Card padding="md" radius="md" withBorder>
+      <Stack gap="md">
+        <Title order={5}>Watchlist</Title>
+        <form onSubmit={onAdd}>
+          <Group gap="xs" wrap="nowrap" align="flex-end">
+            <TextInput
+              flex={1}
+              placeholder="Ticker"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              maxLength={32}
+              aria-label="Add ticker"
+            />
+            <Button type="submit" color="yellow">
+              Add
+            </Button>
+          </Group>
+        </form>
+        {tickers.length === 0 ? (
+          <Text c="dimmed" size="sm">
+            Add symbols to track daily moves (stored in this browser).
+          </Text>
+        ) : (
+          <>
+            <ApiErrorAlert error={snap.error} />
+            {snap.isLoading && (
+              <Text c="dimmed" size="sm">
+                Loading quotes…
+              </Text>
+            )}
+            {!snap.isLoading && (
+              <Table.ScrollContainer minWidth={280} mih={120} mah={360}>
+                <Table {...tableProps}>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Ticker</Table.Th>
+                      <Table.Th>Last</Table.Th>
+                      <Table.Th>Day %</Table.Th>
+                      <Table.Th w={90} />
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {tickers.map((sym) => {
+                      const row = bySym.get(sym)
+                      return (
+                        <Table.Tr key={sym}>
+                          <Table.Td>
+                            <Anchor component={Link} to={`/instruments/${encodeURIComponent(sym)}`} ff="monospace" size="sm">
+                              {sym}
+                            </Anchor>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text ff="monospace" size="sm">
+                              {row?.last != null && Number.isFinite(row.last)
+                                ? row.last.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                                : '—'}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <SignedPctText v={row?.pct_change_1d} />
+                          </Table.Td>
+                          <Table.Td>
+                            <Button
+                              type="button"
+                              size="compact-xs"
+                              color="red"
+                              variant="light"
+                              onClick={() => {
+                                setTickers(removeWatchlistSymbol(sym))
+                                void qc.invalidateQueries({
+                                  queryKey: ['market', 'snapshot', 'watchlist'],
+                                })
+                              }}
+                            >
+                              Remove
+                            </Button>
+                          </Table.Td>
+                        </Table.Tr>
+                      )
+                    })}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
+            )}
+          </>
+        )}
+      </Stack>
+    </Card>
   )
 }

@@ -1,11 +1,15 @@
+import { Anchor, Group, Stack, Table, Text, Title } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { searchInstruments } from '../api/endpoints'
 import ApiErrorAlert from '../components/ApiErrorAlert'
+import PageScaffold from '../components/PageScaffold'
+import { useMantineTableDensity } from '../hooks/useMantineTableDensity'
 
 export default function SearchResultsPage() {
   const [params] = useSearchParams()
   const q = (params.get('q') ?? '').trim()
+  const tableProps = useMantineTableDensity()
 
   const query = useQuery({
     queryKey: ['instrument-search-page', q],
@@ -15,92 +19,113 @@ export default function SearchResultsPage() {
 
   if (!q) {
     return (
-      <div className="page-inner stack">
-        <h1>Search</h1>
-        <p className="muted">Enter a symbol or company name in the top search bar.</p>
-      </div>
+      <PageScaffold>
+        <Title order={1}>Search</Title>
+        <Text c="dimmed" size="sm">
+          Enter a symbol or company name in the top search bar.
+        </Text>
+      </PageScaffold>
     )
   }
 
   return (
-    <div className="page-inner stack">
-      <h1>Results for “{q}”</h1>
-      {query.isLoading && <p className="muted">Loading…</p>}
+    <PageScaffold>
+      <Title order={1}>Results for “{q}”</Title>
+      {query.isLoading && (
+        <Text c="dimmed" size="sm">
+          Loading…
+        </Text>
+      )}
       <ApiErrorAlert error={query.error} />
       {query.data && (
-        <>
-          <section className="search-section">
-            <h2>Instruments</h2>
+        <Stack gap="xl">
+          <Stack gap="sm">
+            <Title order={3}>Instruments</Title>
             {query.data.quotes.length === 0 ? (
-              <p className="muted">No matching instruments.</p>
+              <Text c="dimmed" size="sm">
+                No matching instruments.
+              </Text>
             ) : (
-              <div className="table-wrap">
-                <table className="data">
-                  <thead>
-                    <tr>
-                      <th>Symbol</th>
-                      <th>Name</th>
-                      <th>Exchange</th>
-                      <th>Type</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <Table.ScrollContainer minWidth={400}>
+                <Table {...tableProps}>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Symbol</Table.Th>
+                      <Table.Th>Name</Table.Th>
+                      <Table.Th>Exchange</Table.Th>
+                      <Table.Th>Type</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
                     {query.data.quotes.map((row) => (
-                      <tr key={`${row.symbol}-${row.exchange ?? ''}`}>
-                        <td>
-                          <Link to={`/instruments/${encodeURIComponent(row.symbol)}`}>
-                            <span className="mono">{row.symbol}</span>
-                          </Link>
-                        </td>
-                        <td>{row.shortname ?? row.longname ?? '—'}</td>
-                        <td className="muted">{row.exchange ?? '—'}</td>
-                        <td className="muted">{row.quote_type ?? '—'}</td>
-                      </tr>
+                      <Table.Tr key={`${row.symbol}-${row.exchange ?? ''}`}>
+                        <Table.Td>
+                          <Anchor component={Link} to={`/instruments/${encodeURIComponent(row.symbol)}`} ff="monospace" size="sm">
+                            {row.symbol}
+                          </Anchor>
+                        </Table.Td>
+                        <Table.Td>{row.shortname ?? row.longname ?? '—'}</Table.Td>
+                        <Table.Td>
+                          <Text size="sm" c="dimmed">
+                            {row.exchange ?? '—'}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" c="dimmed">
+                            {row.quote_type ?? '—'}
+                          </Text>
+                        </Table.Td>
+                      </Table.Tr>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
             )}
-          </section>
+          </Stack>
 
-          <section className="search-section">
-            <h2>News</h2>
+          <Stack gap="sm">
+            <Title order={3}>News</Title>
             {query.data.news.length === 0 ? (
-              <p className="muted">No news in this search response.</p>
+              <Text c="dimmed" size="sm">
+                No news in this search response.
+              </Text>
             ) : (
-              <ul className="stack" style={{ gap: '0.65rem', listStyle: 'none', padding: 0 }}>
+              <Stack gap="sm">
                 {query.data.news.map((n, i) => (
-                  <li key={`${n.title}-${i}`}>
+                  <div key={`${n.title}-${i}`}>
                     {n.link ? (
-                      <a href={n.link} target="_blank" rel="noopener noreferrer">
+                      <Anchor href={n.link} target="_blank" rel="noopener noreferrer" size="sm" c="yellow">
                         {n.title}
-                      </a>
+                      </Anchor>
                     ) : (
-                      <span>{n.title}</span>
+                      <Text size="sm">{n.title}</Text>
                     )}
                     {n.publisher ? (
-                      <span className="muted"> — {n.publisher}</span>
+                      <Text span size="sm" c="dimmed">
+                        {' '}
+                        — {n.publisher}
+                      </Text>
                     ) : null}
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </Stack>
             )}
-          </section>
+          </Stack>
 
           {query.data.nav_links.length > 0 && (
-            <section className="search-section">
-              <h2>Links</h2>
-              <div className="search-links">
+            <Stack gap="sm">
+              <Title order={3}>Links</Title>
+              <Group gap="md">
                 {query.data.nav_links.map((nl) => (
-                  <a key={nl.url} href={nl.url} target="_blank" rel="noopener noreferrer">
+                  <Anchor key={nl.url} href={nl.url} target="_blank" rel="noopener noreferrer" size="sm">
                     {nl.title}
-                  </a>
+                  </Anchor>
                 ))}
-              </div>
-            </section>
+              </Group>
+            </Stack>
           )}
-        </>
+        </Stack>
       )}
-    </div>
+    </PageScaffold>
   )
 }

@@ -1,3 +1,5 @@
+import { AppShell as MantineAppShell, Box } from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
 import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import CommandPalette from './CommandPalette'
@@ -6,6 +8,7 @@ import TopNav from './TopNav'
 
 export default function AppShell() {
   const [cmdOpen, setCmdOpen] = useState(false)
+  const [mobileNavOpened, { toggle: toggleMobileNav, close: closeMobileNav }] = useDisclosure()
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -19,15 +22,30 @@ export default function AppShell() {
   }, [])
 
   return (
-    <div className="app-shell">
-      <TopNav />
-      <div className="app-shell-body">
-        <SideNav />
-        <main className="app-shell-main">
+    <MantineAppShell
+      header={{ height: 44 }}
+      navbar={{
+        width: 200,
+        breakpoint: 'sm',
+        collapsed: { mobile: !mobileNavOpened },
+      }}
+      padding={0}
+      transitionDuration={280}
+      transitionTimingFunction="cubic-bezier(0.4, 0, 0.2, 1)"
+    >
+      <MantineAppShell.Header>
+        <TopNav mobileNavOpened={mobileNavOpened} onMobileNavToggle={toggleMobileNav} />
+      </MantineAppShell.Header>
+      <MantineAppShell.Navbar p={0}>
+        <SideNav onNavigate={closeMobileNav} />
+      </MantineAppShell.Navbar>
+      {/* Do not set p/pt/pb/ps/pe on Main — they override shell offsets for header, navbar, aside, footer. */}
+      <MantineAppShell.Main>
+        <Box pb={{ base: 'sm', md: 'md' }}>
           <Outlet />
-        </main>
-      </div>
+        </Box>
+      </MantineAppShell.Main>
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
-    </div>
+    </MantineAppShell>
   )
 }

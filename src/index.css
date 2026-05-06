@@ -1,15 +1,6 @@
 @import './theme.css';
 
-html {
-  font: 15px/1.45 var(--font-sans);
-  color: var(--text);
-  background: var(--surface-page);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
+/* Minimal shell resets; typography and links come from Mantine components. */
 #root {
   width: 100%;
   min-height: 100vh;
@@ -24,42 +15,11 @@ body {
   margin: 0;
 }
 
-h1,
-h2 {
-  font-family: var(--font-sans);
-  font-weight: 600;
-  color: var(--text-strong);
-}
-
-h1 {
-  font-size: 1.75rem;
-  letter-spacing: -0.02em;
-  margin: 0 0 0.75rem;
-}
-
-h2 {
-  font-size: 1.1rem;
-  margin: 0 0 0.5rem;
-}
-
 p {
   margin: 0;
 }
 
 code {
-  font-family: var(--font-mono);
+  font-family: var(--mantine-font-family-monospace);
   font-size: 0.85em;
-  padding: 0.15em 0.35em;
-  border-radius: var(--radius);
-  color: var(--text-strong);
-  background: var(--surface-hover);
-}
-
-a {
-  color: var(--link);
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
 }

@@ -1,3 +1,4 @@
+import { Button } from '@mantine/core'
 import { useEffect, useState } from 'react'
 import {
   applyTableDensity,
@@ -14,14 +15,15 @@ export default function DensityToggle() {
   }, [density])
 
   return (
-    <button
+    <Button
       type="button"
-      className="density-toggle"
+      variant="default"
+      size="compact-sm"
       title={`Table density: ${density}. Click to toggle.`}
       aria-label={`Table density ${density}, toggle comfortable or compact`}
       onClick={() => setDensity((d) => toggleTableDensity(d))}
     >
       {density === 'comfortable' ? 'Comfort' : 'Compact'}
-    </button>
+    </Button>
   )
 }

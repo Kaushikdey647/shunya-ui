@@ -1,3 +1,13 @@
+import {
+  Button,
+  Divider,
+  Modal,
+  ScrollAreaAutosize,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -92,29 +102,23 @@ export default function CommandPalette({ open, onClose }: Props) {
     navigate(path)
   }
 
-  if (!open) return null
-
   return (
-    <div
-      className="command-palette-backdrop"
-      role="presentation"
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose()
-      }}
+    <Modal
+      opened={open}
+      onClose={onClose}
+      centered
+      size="lg"
+      padding="md"
+      withCloseButton={false}
+      aria-label="Command palette"
+      transitionProps={{ transition: 'fade', duration: 220 }}
+      overlayProps={{ backgroundOpacity: 0.45, blur: 3 }}
+      data-command-palette-root
     >
-      <div
-        className="command-palette-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Command palette"
-        data-command-palette-root
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <input
+      <Stack gap="sm">
+        <TextInput
           ref={inputRef}
           type="search"
-          className="command-palette-input"
           placeholder="Jump to symbol, alpha, backtest, or page…"
           autoComplete="off"
           value={q}
@@ -126,102 +130,147 @@ export default function CommandPalette({ open, onClose }: Props) {
             }
           }}
         />
-        <div className="command-palette-hint muted small">
-          <span className="tabular-nums">⌘K</span> / Ctrl+K · Enter selects · Esc closes
-        </div>
+        <Text size="xs" c="dimmed">
+          <span className="tabular-nums">⌘K</span> / Ctrl+K · Esc closes
+        </Text>
+        <Divider />
+        <ScrollAreaAutosize mah="min(60vh, 420px)" type="auto">
+          <Stack gap="lg">
+            {!needle && (
+              <Stack gap="xs">
+                <Title order={6} tt="uppercase" c="dimmed" fw={600}>
+                  Go to
+                </Title>
+                <Button variant="subtle" justify="flex-start" onClick={() => go('/')}>
+                  Home
+                </Button>
+                <Button variant="subtle" justify="flex-start" onClick={() => go('/studio')}>
+                  <Stack gap={0} align="flex-start">
+                    <Text size="sm">Alpha Studio</Text>
+                    <Text size="xs" c="dimmed">
+                      Edit & run
+                    </Text>
+                  </Stack>
+                </Button>
+                <Button variant="subtle" justify="flex-start" onClick={() => go('/backtests')}>
+                  Backtests list
+                </Button>
+                <Button variant="subtle" justify="flex-start" onClick={() => go('/data')}>
+                  Data summary
+                </Button>
+              </Stack>
+            )}
 
-        <div className="command-palette-body">
-          {!needle && (
-            <section className="command-palette-section">
-              <div className="command-palette-section-title">Go to</div>
-              <button type="button" className="command-palette-row" onClick={() => go('/')}>
-                <span className="command-palette-k">Home</span>
-              </button>
-              <button type="button" className="command-palette-row" onClick={() => go('/studio')}>
-                <span className="command-palette-k">Alpha Studio</span>
-                <span className="command-palette-meta muted small">Edit &amp; run</span>
-              </button>
-              <button type="button" className="command-palette-row" onClick={() => go('/backtests')}>
-                <span className="command-palette-k">Backtests list</span>
-              </button>
-              <button type="button" className="command-palette-row" onClick={() => go('/data')}>
-                <span className="command-palette-k">Data summary</span>
-              </button>
-            </section>
-          )}
-
-          {debounced.length >= 1 && (
-            <section className="command-palette-section">
-              <div className="command-palette-section-title">Instruments</div>
-              {searchQ.isLoading && <div className="command-palette-muted">Searching…</div>}
-              {searchQ.isError && (
-                <div className="command-palette-muted">Instrument search failed.</div>
-              )}
-              {!searchQ.isLoading &&
-                !searchQ.isError &&
-                quoteHits.length === 0 &&
-                debounced.length >= 1 && (
-                  <div className="command-palette-muted">No matching instruments.</div>
+            {debounced.length >= 1 && (
+              <Stack gap="xs">
+                <Title order={6} tt="uppercase" c="dimmed" fw={600}>
+                  Instruments
+                </Title>
+                {searchQ.isLoading && (
+                  <Text size="sm" c="dimmed">
+                    Searching…
+                  </Text>
                 )}
-              {quoteHits.map((row) => (
-                <button
-                  key={`${row.symbol}-${row.exchange ?? ''}`}
-                  type="button"
-                  className="command-palette-row"
-                  onClick={() =>
-                    go(`/instruments/${encodeURIComponent(row.symbol)}`)
-                  }
+                {searchQ.isError && (
+                  <Text size="sm" c="dimmed">
+                    Instrument search failed.
+                  </Text>
+                )}
+                {!searchQ.isLoading &&
+                  !searchQ.isError &&
+                  quoteHits.length === 0 &&
+                  debounced.length >= 1 && (
+                    <Text size="sm" c="dimmed">
+                      No matching instruments.
+                    </Text>
+                  )}
+                {quoteHits.map((row) => (
+                  <Button
+                    key={`${row.symbol}-${row.exchange ?? ''}`}
+                    variant="light"
+                    color="yellow"
+                    justify="flex-start"
+                    onClick={() => go(`/instruments/${encodeURIComponent(row.symbol)}`)}
+                  >
+                    <Stack gap={0} align="flex-start">
+                      <Text size="sm" ff="monospace" fw={600}>
+                        {row.symbol}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {row.shortname ?? row.longname ?? ''}
+                      </Text>
+                    </Stack>
+                  </Button>
+                ))}
+              </Stack>
+            )}
+
+            <Stack gap="xs">
+              <Title order={6} tt="uppercase" c="dimmed" fw={600}>
+                Alphas
+              </Title>
+              {alphasQ.isLoading && (
+                <Text size="sm" c="dimmed">
+                  Loading alphas…
+                </Text>
+              )}
+              {!alphasQ.isLoading && alphaHits.length === 0 && needle && (
+                <Text size="sm" c="dimmed">
+                  No matching alphas.
+                </Text>
+              )}
+              {alphaHits.map((a) => (
+                <Button
+                  key={a.id}
+                  variant="subtle"
+                  justify="flex-start"
+                  onClick={() => go(`/studio/${encodeURIComponent(a.id)}`)}
                 >
-                  <span className="command-palette-k mono">{row.symbol}</span>
-                  <span className="command-palette-meta muted small">
-                    {row.shortname ?? row.longname ?? ''}
-                  </span>
-                </button>
+                  <Stack gap={0} align="flex-start">
+                    <Text size="sm">{a.name}</Text>
+                    <Text size="xs" c="dimmed" ff="monospace">
+                      {a.id.slice(0, 8)}…
+                    </Text>
+                  </Stack>
+                </Button>
               ))}
-            </section>
-          )}
+            </Stack>
 
-          <section className="command-palette-section">
-            <div className="command-palette-section-title">Alphas</div>
-            {alphasQ.isLoading && <div className="command-palette-muted">Loading alphas…</div>}
-            {!alphasQ.isLoading && alphaHits.length === 0 && needle && (
-              <div className="command-palette-muted">No matching alphas.</div>
-            )}
-            {alphaHits.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                className="command-palette-row"
-                onClick={() => go(`/studio/${encodeURIComponent(a.id)}`)}
-              >
-                <span className="command-palette-k">{a.name}</span>
-                <span className="command-palette-meta muted small mono">{a.id.slice(0, 8)}…</span>
-              </button>
-            ))}
-          </section>
-
-          <section className="command-palette-section">
-            <div className="command-palette-section-title">Recent backtests</div>
-            {backtestsQ.isLoading && <div className="command-palette-muted">Loading…</div>}
-            {!backtestsQ.isLoading && jobHits.length === 0 && needle && (
-              <div className="command-palette-muted">No matching jobs.</div>
-            )}
-            {jobHits.map((j) => (
-              <button
-                key={j.id}
-                type="button"
-                className="command-palette-row"
-                onClick={() => go(`/backtests/${encodeURIComponent(j.id)}`)}
-              >
-                <span className="command-palette-k mono tabular-nums">{j.id.slice(0, 8)}…</span>
-                <span className="command-palette-meta muted small">
-                  {j.alpha_name ?? j.alpha_id} · {j.status}
-                </span>
-              </button>
-            ))}
-          </section>
-        </div>
-      </div>
-    </div>
+            <Stack gap="xs">
+              <Title order={6} tt="uppercase" c="dimmed" fw={600}>
+                Recent backtests
+              </Title>
+              {backtestsQ.isLoading && (
+                <Text size="sm" c="dimmed">
+                  Loading…
+                </Text>
+              )}
+              {!backtestsQ.isLoading && jobHits.length === 0 && needle && (
+                <Text size="sm" c="dimmed">
+                  No matching jobs.
+                </Text>
+              )}
+              {jobHits.map((j) => (
+                <Button
+                  key={j.id}
+                  variant="subtle"
+                  justify="flex-start"
+                  onClick={() => go(`/backtests/${encodeURIComponent(j.id)}`)}
+                >
+                  <Stack gap={0} align="flex-start">
+                    <Text size="sm" ff="monospace" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {j.id.slice(0, 8)}…
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {j.alpha_name ?? j.alpha_id} · {j.status}
+                    </Text>
+                  </Stack>
+                </Button>
+              ))}
+            </Stack>
+          </Stack>
+        </ScrollAreaAutosize>
+      </Stack>
+    </Modal>
   )
 }

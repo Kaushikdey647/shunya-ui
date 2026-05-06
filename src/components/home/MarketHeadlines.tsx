@@ -1,3 +1,4 @@
+import { Anchor, Card, Divider, Group, Stack, Text, Title } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { getMarketHeadlines } from '../../api/endpoints'
 import ApiErrorAlert from '../ApiErrorAlert'
@@ -21,33 +22,50 @@ export default function MarketHeadlines() {
   })
 
   return (
-    <div className="dashboard-chart-panel home-headlines-panel">
-      <div className="dashboard-chart-title">Market headlines</div>
-      <ApiErrorAlert error={q.error} />
-      {q.isLoading && <p className="muted">Loading headlines…</p>}
-      {!q.isLoading && q.data && (
-        <ul className="home-headlines-list">
-          {q.data.headlines.length === 0 ? (
-            <li className="muted">No headlines</li>
-          ) : (
-            q.data.headlines.map((h, i) => (
-              <li key={`${h.title}-${i}`} className="home-headline-item">
-                {h.link ? (
-                  <a href={h.link} target="_blank" rel="noreferrer" className="home-headline-title">
-                    {h.title}
-                  </a>
-                ) : (
-                  <span className="home-headline-title">{h.title}</span>
-                )}
-                <div className="home-headline-meta muted">
-                  <span>{h.publisher ?? '—'}</span>
-                  <span className="mono">{fmtTime(h.published_at)}</span>
+    <Card padding="md" radius="md" withBorder>
+      <Stack gap="md">
+        <Title order={5}>Market headlines</Title>
+        <ApiErrorAlert error={q.error} />
+        {q.isLoading && (
+          <Text c="dimmed" size="sm">
+            Loading headlines…
+          </Text>
+        )}
+        {!q.isLoading && q.data && (
+          <Stack gap={0}>
+            {q.data.headlines.length === 0 ? (
+              <Text c="dimmed" size="sm">
+                No headlines
+              </Text>
+            ) : (
+              q.data.headlines.map((h, i) => (
+                <div key={`${h.title}-${i}`}>
+                  {i > 0 && <Divider my="sm" />}
+                  <Stack gap={4}>
+                    {h.link ? (
+                      <Anchor href={h.link} target="_blank" rel="noreferrer" size="sm" fw={500} c="yellow">
+                        {h.title}
+                      </Anchor>
+                    ) : (
+                      <Text size="sm" fw={500}>
+                        {h.title}
+                      </Text>
+                    )}
+                    <Group gap="md" wrap="wrap">
+                      <Text size="xs" c="dimmed">
+                        {h.publisher ?? '—'}
+                      </Text>
+                      <Text size="xs" c="dimmed" ff="monospace">
+                        {fmtTime(h.published_at)}
+                      </Text>
+                    </Group>
+                  </Stack>
                 </div>
-              </li>
-            ))
-          )}
-        </ul>
-      )}
-    </div>
+              ))
+            )}
+          </Stack>
+        )}
+      </Stack>
+    </Card>
   )
 }

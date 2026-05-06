@@ -1,26 +1,23 @@
-import { useCallback, useEffect, useState } from 'react'
-import { applyTheme, resolveInitialTheme, type Theme, toggleTheme } from '../theme'
+import { Button, useMantineColorScheme } from '@mantine/core'
+import { useCallback } from 'react'
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => resolveInitialTheme())
-
-  useEffect(() => {
-    applyTheme(theme)
-  }, [theme])
+  const { colorScheme, setColorScheme } = useMantineColorScheme()
 
   const onClick = useCallback(() => {
-    setTheme((t) => toggleTheme(t))
-  }, [])
+    setColorScheme(colorScheme === 'dark' ? 'light' : 'dark')
+  }, [colorScheme, setColorScheme])
 
   return (
-    <button
+    <Button
       type="button"
-      className="theme-toggle"
+      variant="default"
+      size="compact-sm"
       onClick={onClick}
-      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={colorScheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label={colorScheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-      {theme === 'dark' ? 'Light' : 'Dark'}
-    </button>
+      {colorScheme === 'dark' ? 'Light' : 'Dark'}
+    </Button>
   )
 }

@@ -1,3 +1,4 @@
+import { Alert } from '@mantine/core'
 import { ApiError } from '../api/client'
 
 export default function ApiErrorAlert({ error }: { error: unknown }) {
@@ -9,8 +10,8 @@ export default function ApiErrorAlert({ error }: { error: unknown }) {
         ? error.message
         : String(error)
   return (
-    <div className="alert alert-error" role="alert">
+    <Alert color="red" variant="light" role="alert">
       {message}
-    </div>
+    </Alert>
   )
 }

@@ -1,4 +1,5 @@
 import Editor, { useMonaco } from '@monaco-editor/react'
+import { Paper, useComputedColorScheme } from '@mantine/core'
 import { useEffect, useRef } from 'react'
 import { registerAlphaCompletions } from '../alphaEditor/completions'
 
@@ -18,6 +19,8 @@ export default function AlphaSourceEditor({
 }: Props) {
   const monaco = useMonaco()
   const regRef = useRef<{ dispose: () => void } | null>(null)
+  const colorScheme = useComputedColorScheme('light')
+  const editorTheme = colorScheme === 'dark' ? 'vs-dark' : 'light'
 
   useEffect(() => {
     if (!monaco) return
@@ -30,14 +33,12 @@ export default function AlphaSourceEditor({
   }, [monaco])
 
   return (
-    <div
-      className="alpha-source-editor"
-      style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}
-    >
+    <Paper p={0} radius="sm" withBorder style={{ overflow: 'hidden' }}>
       <Editor
+        key={editorTheme}
         height={height}
         defaultLanguage="python"
-        theme="vs-dark"
+        theme={editorTheme}
         value={value}
         onChange={(v) => onChange(v ?? '')}
         options={{
@@ -49,6 +50,6 @@ export default function AlphaSourceEditor({
           tabSize: 4,
         }}
       />
-    </div>
+    </Paper>
   )
 }

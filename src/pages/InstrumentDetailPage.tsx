@@ -1,3 +1,12 @@
+import {
+  Alert,
+  Anchor,
+  Button,
+  Group,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -5,6 +14,7 @@ import { getInstrumentNews, getInstrumentOhlcv } from '../api/endpoints'
 import ApiErrorAlert from '../components/ApiErrorAlert'
 import InstrumentChart from '../components/InstrumentChart'
 import InstrumentContextFeed from '../components/InstrumentContextFeed'
+import PageScaffold from '../components/PageScaffold'
 import { barTimesUtcSeconds, snapCrosshairToBarTime } from '../utils/chartBarTimes'
 
 type Preset = { id: string; label: string; interval: string; period: string }
@@ -71,63 +81,78 @@ export default function InstrumentDetailPage() {
 
   if (!symbol) {
     return (
-      <div className="page-inner stack">
-        <h1>Invalid symbol</h1>
-        <p className="muted">Use a valid ticker (letters, numbers, . - ^).</p>
-        <Link to="/search">Back to search</Link>
-      </div>
+      <PageScaffold>
+        <Title order={1}>Invalid symbol</Title>
+        <Text c="dimmed" size="sm">
+          Use a valid ticker (letters, numbers, . - ^).
+        </Text>
+        <Anchor component={Link} to="/search">
+          Back to search
+        </Anchor>
+      </PageScaffold>
     )
   }
 
   const yahooUrl = `https://finance.yahoo.com/quote/${encodeURIComponent(symbol)}`
 
   return (
-    <div className="page-inner stack">
-      <div className="instrument-header">
-        <h1 className="instrument-symbol">{symbol}</h1>
-        <a href={yahooUrl} target="_blank" rel="noopener noreferrer">
-          Yahoo Finance
-        </a>
-        <Link to={`/search?q=${encodeURIComponent(symbol)}`} className="muted">
-          Search again
-        </Link>
-      </div>
+    <PageScaffold>
+      <Group justify="space-between" align="flex-start" wrap="wrap">
+        <Title order={1} ff="monospace">
+          {symbol}
+        </Title>
+        <Group gap="md">
+          <Anchor href={yahooUrl} target="_blank" rel="noopener noreferrer" size="sm">
+            Yahoo Finance
+          </Anchor>
+          <Anchor component={Link} to={`/search?q=${encodeURIComponent(symbol)}`} size="sm">
+            Search again
+          </Anchor>
+        </Group>
+      </Group>
 
-      <div className="timeframe-bar" role="toolbar" aria-label="Timeframe">
+      <Button.Group>
         {TIMEFRAMES.map((p) => (
-          <button
+          <Button
             key={p.id}
-            type="button"
-            className={`timeframe-btn${p.id === preset.id ? ' timeframe-btn-active' : ''}`}
+            variant={p.id === preset.id ? 'filled' : 'default'}
+            color={p.id === preset.id ? 'yellow' : undefined}
+            size="compact-sm"
             onClick={() => {
               setPreset(p)
               setFocusBarUnix(null)
             }}
           >
             {p.label}
-          </button>
+          </Button>
         ))}
-      </div>
+      </Button.Group>
 
-      {ohlcv.isLoading && <p className="muted">Loading chart…</p>}
+      {ohlcv.isLoading && (
+        <Text c="dimmed" size="sm">
+          Loading chart…
+        </Text>
+      )}
       <ApiErrorAlert error={ohlcv.error} />
       <ApiErrorAlert error={newsQuery.error} />
       {ohlcv.data?.storage_error && (
-        <div className="alert alert-error" role="alert">
+        <Alert color="red" variant="light">
           {ohlcv.data.storage_error}
-        </div>
+        </Alert>
       )}
       {ohlcv.data?.storage_status === 'deferred' && ohlcv.data.storage_job_id != null && (
-        <p className="muted">
+        <Text c="dimmed" size="sm">
           Database sync queued (job {ohlcv.data.storage_job_id}).
-        </p>
+        </Text>
       )}
       {ohlcv.data && ohlcv.data.bars.length === 0 && !ohlcv.isLoading && (
-        <p className="muted">No bars returned for this range.</p>
+        <Text c="dimmed" size="sm">
+          No bars returned for this range.
+        </Text>
       )}
       {ohlcv.data && ohlcv.data.bars.length > 0 && (
-        <div className="instrument-split">
-          <div className="instrument-split-chart">
+        <Group align="flex-start" gap="md" wrap="wrap" grow>
+          <Stack style={{ flex: '2 1 420px', minWidth: 280 }}>
             <InstrumentChart
               bars={ohlcv.data.bars}
               news={newsRows}
@@ -135,14 +160,16 @@ export default function InstrumentDetailPage() {
               compactNewsTooltip
               key={`${preset.id}-${symbol}`}
             />
-          </div>
-          <InstrumentContextFeed
-            news={newsRows}
-            barTimes={barTimes}
-            focusBarUnix={focusBarUnix}
-          />
-        </div>
+          </Stack>
+          <Stack style={{ flex: '1 1 280px', minWidth: 260 }}>
+            <InstrumentContextFeed
+              news={newsRows}
+              barTimes={barTimes}
+              focusBarUnix={focusBarUnix}
+            />
+          </Stack>
+        </Group>
       )}
-    </div>
+    </PageScaffold>
   )
 }

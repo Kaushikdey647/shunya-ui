@@ -1,4 +1,21 @@
+import {
+  Anchor,
+  Button,
+  Code,
+  Group,
+  Paper,
+  Select,
+  SimpleGrid,
+  Stack,
+  Table,
+  Text,
+  Title,
+  UnstyledButton,
+  useMantineColorScheme,
+  useMantineTheme,
+} from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
+import type { CSSProperties } from 'react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -23,6 +40,9 @@ import type {
   TickerDashboardRow,
 } from '../api/types'
 import ApiErrorAlert from '../components/ApiErrorAlert'
+import PageScaffold from '../components/PageScaffold'
+import { useMantineTableDensity } from '../hooks/useMantineTableDensity'
+import type { HeatmapPalette } from '../lib/monthlyReturnsHeatmap'
 
 const INTERVAL_OPTIONS = [
   '1m',
@@ -51,23 +71,6 @@ type SortKey =
   | 'sharpe'
   | 'raw_bar_count'
 
-const chartAxisStyle = { fontSize: 11, fill: 'var(--text-muted)' }
-
-const PIE_PALETTE = [
-  'var(--accent)',
-  'var(--accent-muted)',
-  'var(--success)',
-  'var(--border-strong)',
-  'var(--text-muted)',
-  '#7c9cbf',
-  '#9b8dc9',
-  '#c98d8d',
-  '#8dc9a8',
-  '#c9b38d',
-  '#8db4c9',
-  '#b0b0b0',
-]
-
 function collapseClassificationCounts(
   counts: ClassificationLabelCount[],
   maxSlices = 12,
@@ -94,10 +97,73 @@ function formatNum(n: number | null | undefined, digits = 2): string {
 }
 
 export default function DataSummaryPage() {
+  const theme = useMantineTheme()
+  const { colorScheme } = useMantineColorScheme()
+  const density = useMantineTableDensity()
   const [interval, setInterval] = useState('1d')
   const [bucket, setBucket] = useState<DashboardBucketParam>('auto')
   const [sortKey, setSortKey] = useState<SortKey>('ticker')
   const [sortAsc, setSortAsc] = useState(true)
+
+  const chartMuted =
+    colorScheme === 'dark' ? theme.colors.dark[2] : theme.colors.gray[6]
+  const chartGrid =
+    colorScheme === 'dark' ? theme.colors.dark[5] : theme.colors.gray[3]
+  const stickyColumnBg =
+    colorScheme === 'dark' ? theme.other.darkPanelBg : theme.white
+  const borderColor =
+    colorScheme === 'dark' ? theme.other.darkBorder : theme.colors.gray[4]
+  const textColor = colorScheme === 'dark' ? theme.colors.dark[0] : theme.colors.dark[9]
+  const strongColor =
+    colorScheme === 'dark' ? theme.colors.dark[0] : theme.colors.dark[9]
+
+  const chartAxisStyle = useMemo(
+    () => ({ fontSize: 11, fill: chartMuted }),
+    [chartMuted],
+  )
+
+  const tooltipStyle = useMemo(
+    () => ({
+      background: colorScheme === 'dark' ? theme.other.darkPanelBg : theme.white,
+      border: `1px solid ${borderColor}`,
+      borderRadius: theme.defaultRadius,
+      color: textColor,
+      fontSize: '0.8125rem',
+    }),
+    [borderColor, colorScheme, textColor, theme.defaultRadius, theme.other.darkPanelBg, theme.white],
+  )
+
+  const piePalette = useMemo(
+    () => [
+      theme.colors.yellow[6],
+      theme.colors.yellow[4],
+      theme.colors.teal[6],
+      borderColor,
+      chartMuted,
+      theme.colors.dark[4],
+      theme.colors.red[4],
+      theme.colors.gray[5],
+      theme.colors.teal[3],
+      theme.colors.red[3],
+      theme.colors.dark[3],
+      theme.colors.gray[6],
+    ],
+    [borderColor, chartMuted, theme.colors],
+  )
+
+  const heatmapPalette: HeatmapPalette = useMemo(
+    () => ({
+      success: theme.colors.teal[6]!,
+      error: theme.colors.red[6]!,
+      surface:
+        colorScheme === 'dark'
+          ? String(theme.other.darkPanelBg)
+          : String(theme.white),
+      empty:
+        colorScheme === 'dark' ? theme.colors.dark[6]! : theme.colors.gray[2]!,
+    }),
+    [colorScheme, theme.colors.dark, theme.colors.gray, theme.colors.red, theme.colors.teal, theme.other.darkPanelBg, theme.white],
+  )
 
   const query = useQuery({
     queryKey: ['dataDashboard', interval, bucket],
@@ -157,72 +223,70 @@ export default function DataSummaryPage() {
     if (sortKey === key) setSortAsc(!sortAsc)
     else {
       setSortKey(key)
-      setSortAsc(key === 'ticker' ? true : false)
+      setSortAsc(key === 'ticker')
     }
   }
 
-  return (
-    <div className="page-inner stack">
-      <div className="row">
-        <Link to="/" className="btn">
-          ← Home
-        </Link>
-      </div>
+  const accentStroke = theme.colors.yellow[colorScheme === 'dark' ? 4 : 6]
 
-      <header className="stack" style={{ gap: '0.35rem' }}>
-        <h1>Data integrity & analytics</h1>
-        <p className="muted">
+  return (
+    <PageScaffold>
+      <Anchor component={Link} to="/" size="sm">
+        ← Home
+      </Anchor>
+
+      <Stack gap="xs">
+        <Title order={1}>Data integrity & analytics</Title>
+        <Text c="dimmed" size="sm">
           Coverage across the database reference window (global span for this interval and source),
           plus risk–return positioning from stored closes. Refresh pulls the latest Timescale snapshot.
-        </p>
-      </header>
+        </Text>
+      </Stack>
 
-      <div className="row" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <label className="muted" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          Interval
-          <select
-            value={interval}
-            onChange={(e) => setInterval(e.target.value)}
-            style={{ minWidth: '6rem' }}
-          >
-            {INTERVAL_OPTIONS.map((iv) => (
-              <option key={iv} value={iv}>
-                {iv}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="muted" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          Coverage buckets
-          <select
-            value={bucket}
-            onChange={(e) => setBucket(e.target.value as DashboardBucketParam)}
-            style={{ minWidth: '7rem' }}
-          >
-            {BUCKET_OPTIONS.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="button" className="btn btn-primary" onClick={() => query.refetch()} disabled={query.isFetching}>
+      <Group align="flex-end" wrap="wrap">
+        <Select
+          label="Interval"
+          value={interval}
+          onChange={(v) => v && setInterval(v)}
+          data={INTERVAL_OPTIONS.map((iv) => ({ value: iv, label: iv }))}
+          w={120}
+        />
+        <Select
+          label="Coverage buckets"
+          value={bucket}
+          onChange={(v) => v && setBucket(v as DashboardBucketParam)}
+          data={BUCKET_OPTIONS.map((b) => ({ value: b, label: b }))}
+          w={140}
+        />
+        <Button
+          color="yellow"
+          onClick={() => query.refetch()}
+          disabled={query.isFetching}
+        >
           {query.isFetching ? 'Loading…' : 'Refresh'}
-        </button>
-      </div>
+        </Button>
+      </Group>
 
       <ApiErrorAlert error={query.error} />
 
-      {query.isLoading && <p className="muted">Loading dashboard…</p>}
+      {query.isLoading && (
+        <Text c="dimmed" size="sm">
+          Loading dashboard…
+        </Text>
+      )}
 
       {data && (
         <>
-          <section className="dashboard-kpi-row row" style={{ gap: '1rem', flexWrap: 'wrap' }}>
+          <SimpleGrid cols={{ base: 1, xs: 2, md: 3, lg: 5 }} spacing="md">
             <KpiCard
               title="Reference window"
               value={`${data.reference_start.slice(0, 10)} → ${data.reference_end.slice(0, 10)}`}
             />
-            <KpiCard title="Tickers" value={String(data.ticker_count)} hint={data.truncated ? 'truncated (see env)' : undefined} />
+            <KpiCard
+              title="Tickers"
+              value={String(data.ticker_count)}
+              hint={data.truncated ? 'truncated (see env)' : undefined}
+            />
             <KpiCard
               title="Mean completeness"
               value={`${data.aggregate_mean_completeness_pct.toFixed(1)}%`}
@@ -235,40 +299,62 @@ export default function DataSummaryPage() {
               title="Heatmap columns"
               value={`${data.bucket_count} (${data.bucket_granularity}${data.bucket_auto_subsampled ? ', merged' : ''})`}
             />
-          </section>
+          </SimpleGrid>
 
-          <p className="muted" style={{ fontSize: '0.8125rem', maxWidth: '52rem' }}>
+          <Text c="dimmed" size="xs" maw={832}>
             Metrics use consecutive stored closes in the reference window (same semantics as{' '}
-            <code className="mono">POST /data</code>). Gaps reduce completeness but do not insert synthetic bars.
+            <Code>POST /data</Code>). Gaps reduce completeness but do not insert synthetic bars.
             Annualized volatility and Sharpe use bar cadence <strong>{data.bar_unit}</strong> step{' '}
             <strong>{data.bar_step}</strong> (~{data.periods_per_year.toFixed(0)} periods/year).
-          </p>
+          </Text>
 
-          <section className="stack" style={{ gap: '0.75rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.05rem' }}>Classifications</h2>
-            <p className="muted" style={{ fontSize: '0.8125rem', margin: 0 }}>
+          <Stack gap="sm">
+            <Title order={2} size="h4">
+              Classifications
+            </Title>
+            <Text c="dimmed" size="xs">
               Ticker counts by latest yfinance classification row per symbol (same universe as the heatmap).
-            </p>
-            <div className="dashboard-chart-grid">
-              <ClassificationPiePanel title="Sector" counts={data.sector_counts ?? []} />
-              <ClassificationPiePanel title="Industry" counts={data.industry_counts ?? []} />
-            </div>
-          </section>
+            </Text>
+            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+              <ClassificationPiePanel
+                title="Sector"
+                counts={data.sector_counts ?? []}
+                piePalette={piePalette}
+                tooltipStyle={tooltipStyle}
+                chartMuted={chartMuted}
+              />
+              <ClassificationPiePanel
+                title="Industry"
+                counts={data.industry_counts ?? []}
+                piePalette={piePalette}
+                tooltipStyle={tooltipStyle}
+                chartMuted={chartMuted}
+              />
+            </SimpleGrid>
+          </Stack>
 
-          <div className="dashboard-chart-grid">
-            <div className="table-wrap dashboard-chart-panel">
-              <div className="dashboard-chart-title">Risk vs return</div>
+          <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
+            <Paper withBorder p="md" radius="md">
+              <Text fw={600} size="sm" mb="sm">
+                Risk vs return
+              </Text>
               <div style={{ width: '100%', height: 280 }}>
                 <ResponsiveContainer>
                   <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-                    <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
+                    <CartesianGrid stroke={chartGrid} strokeDasharray="3 3" />
                     <XAxis
                       type="number"
                       dataKey="x"
                       name="Vol"
                       unit="%"
                       tick={chartAxisStyle}
-                      label={{ value: 'Annualized volatility %', position: 'bottom', offset: 0, fill: 'var(--text-muted)', fontSize: 11 }}
+                      label={{
+                        value: 'Annualized volatility %',
+                        position: 'bottom',
+                        offset: 0,
+                        fill: chartMuted,
+                        fontSize: 11,
+                      }}
                     />
                     <YAxis
                       type="number"
@@ -276,7 +362,13 @@ export default function DataSummaryPage() {
                       name="Return"
                       unit="%"
                       tick={chartAxisStyle}
-                      label={{ value: 'Total return %', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11 }}
+                      label={{
+                        value: 'Total return %',
+                        angle: -90,
+                        position: 'insideLeft',
+                        fill: chartMuted,
+                        fontSize: 11,
+                      }}
                     />
                     <Tooltip
                       cursor={{ strokeDasharray: '3 3' }}
@@ -284,21 +376,16 @@ export default function DataSummaryPage() {
                         if (!active || !payload?.length) return null
                         const p = payload[0].payload as (typeof scatterPoints)[0]
                         return (
-                          <div
-                            className="muted"
-                            style={{
-                              padding: '0.35rem 0.5rem',
-                              fontSize: '0.8125rem',
-                              background: 'var(--surface-panel)',
-                              border: '1px solid var(--border)',
-                              borderRadius: 'var(--radius)',
-                            }}
-                          >
-                            <strong style={{ color: 'var(--text-strong)' }}>{p.ticker}</strong>
-                            <div>Return: {p.y.toFixed(2)}%</div>
-                            <div>Vol: {p.x.toFixed(2)}%</div>
-                            <div>Sharpe: {p.sharpe != null ? p.sharpe.toFixed(2) : '—'}</div>
-                            <div>Bars: {p.bars ?? '—'}</div>
+                          <div style={{ ...tooltipStyle, padding: '0.35rem 0.5rem' }}>
+                            <Text fw={600} size="sm" c={strongColor}>
+                              {p.ticker}
+                            </Text>
+                            <Text size="xs">Return: {p.y.toFixed(2)}%</Text>
+                            <Text size="xs">Vol: {p.x.toFixed(2)}%</Text>
+                            <Text size="xs">
+                              Sharpe: {p.sharpe != null ? p.sharpe.toFixed(2) : '—'}
+                            </Text>
+                            <Text size="xs">Bars: {p.bars ?? '—'}</Text>
                           </div>
                         )
                       }}
@@ -306,7 +393,7 @@ export default function DataSummaryPage() {
                     <Scatter
                       name="Tickers"
                       data={scatterPoints}
-                      fill="var(--accent)"
+                      fill={accentStroke}
                       isAnimationActive={false}
                       shape={(raw: unknown) => {
                         const p = raw as { cx?: number; cy?: number }
@@ -316,8 +403,8 @@ export default function DataSummaryPage() {
                             cx={p.cx}
                             cy={p.cy}
                             r={3}
-                            fill="var(--accent)"
-                            stroke="var(--accent)"
+                            fill={accentStroke}
+                            stroke={accentStroke}
                             strokeWidth={1}
                             fillOpacity={0.88}
                           />
@@ -327,108 +414,181 @@ export default function DataSummaryPage() {
                   </ScatterChart>
                 </ResponsiveContainer>
               </div>
-            </div>
+            </Paper>
 
-            <div className="table-wrap dashboard-chart-panel">
-              <div className="dashboard-chart-title">Completeness distribution</div>
+            <Paper withBorder p="md" radius="md">
+              <Text fw={600} size="sm" mb="sm">
+                Completeness distribution
+              </Text>
               <div style={{ width: '100%', height: 280 }}>
                 <ResponsiveContainer>
                   <BarChart data={histogramBars} margin={{ top: 8, right: 8, bottom: 40, left: 8 }}>
-                    <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
-                    <XAxis dataKey="label" tick={chartAxisStyle} interval={0} angle={-35} textAnchor="end" height={60} />
-                    <YAxis tick={chartAxisStyle} allowDecimals={false} />
-                    <Tooltip
-                      contentStyle={{
-                        background: 'var(--surface-panel)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 'var(--radius)',
-                        color: 'var(--text)',
-                      }}
+                    <CartesianGrid stroke={chartGrid} strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="label"
+                      tick={chartAxisStyle}
+                      interval={0}
+                      angle={-35}
+                      textAnchor="end"
+                      height={60}
                     />
-                    <Bar dataKey="count" fill="var(--accent-muted)" stroke="var(--accent)" radius={[2, 2, 0, 0]} />
+                    <YAxis tick={chartAxisStyle} allowDecimals={false} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar
+                      dataKey="count"
+                      fill={theme.colors.yellow[4]}
+                      stroke={accentStroke}
+                      radius={[2, 2, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <p className="muted" style={{ padding: '0 0.65rem 0.65rem', fontSize: '0.75rem', margin: 0 }}>
+              <Text c="dimmed" size="xs" px="xs" pb="xs" mt={4}>
                 Count of tickers by completeness % bucket (full span of heatmap columns).
-              </p>
-            </div>
-          </div>
+              </Text>
+            </Paper>
+          </SimpleGrid>
 
-          <section className="stack">
-            <h2>Coverage heatmap</h2>
-            <p className="muted">
+          <Stack gap="sm">
+            <Title order={2} size="h4">
+              Coverage heatmap
+            </Title>
+            <Text c="dimmed" size="sm">
               Rows are tickers; columns are time buckets (green = at least one bar). Axis uses{' '}
-              <code className="mono">{data.interval}</code> / <code className="mono">{data.source}</code>.
-            </p>
-            <Heatmap rows={sortedTickers} buckets={data.buckets} />
-          </section>
+              <Code>{data.interval}</Code> / <Code>{data.source}</Code>.
+            </Text>
+            <Heatmap
+              rows={sortedTickers}
+              buckets={data.buckets}
+              palette={heatmapPalette}
+              tickBorder={chartGrid}
+              stickyBg={stickyColumnBg}
+            />
+          </Stack>
 
-          <section className="stack">
-            <h2>Instruments</h2>
-            <div className="table-wrap dashboard-instruments-scroll">
-              <table className="data">
-                <thead>
-                  <tr>
-                    <SortTh label="Ticker" k="ticker" active={sortKey} asc={sortAsc} onToggle={toggleSort} />
-                    <SortTh label="Completeness %" k="completeness_pct" active={sortKey} asc={sortAsc} onToggle={toggleSort} />
-                    <SortTh label="Longest run" k="longest_run_buckets" active={sortKey} asc={sortAsc} onToggle={toggleSort} />
-                    <SortTh label="Bars" k="raw_bar_count" active={sortKey} asc={sortAsc} onToggle={toggleSort} />
-                    <SortTh label="Return %" k="return_pct" active={sortKey} asc={sortAsc} onToggle={toggleSort} />
-                    <SortTh label="Vol ann. %" k="risk_ann_pct" active={sortKey} asc={sortAsc} onToggle={toggleSort} />
-                    <SortTh label="Sharpe" k="sharpe" active={sortKey} asc={sortAsc} onToggle={toggleSort} />
-                    <th className="muted">First bar</th>
-                    <th className="muted">Last bar</th>
-                  </tr>
-                </thead>
-                <tbody>
+          <Stack gap="sm">
+            <Title order={2} size="h4">
+              Instruments
+            </Title>
+            <Table.ScrollContainer minWidth={720}>
+              <Table {...density} striped highlightOnHover>
+                <Table.Thead>
+                  <Table.Tr>
+                    <SortTh
+                      label="Ticker"
+                      k="ticker"
+                      active={sortKey}
+                      asc={sortAsc}
+                      onToggle={toggleSort}
+                    />
+                    <SortTh
+                      label="Completeness %"
+                      k="completeness_pct"
+                      active={sortKey}
+                      asc={sortAsc}
+                      onToggle={toggleSort}
+                    />
+                    <SortTh
+                      label="Longest run"
+                      k="longest_run_buckets"
+                      active={sortKey}
+                      asc={sortAsc}
+                      onToggle={toggleSort}
+                    />
+                    <SortTh
+                      label="Bars"
+                      k="raw_bar_count"
+                      active={sortKey}
+                      asc={sortAsc}
+                      onToggle={toggleSort}
+                    />
+                    <SortTh
+                      label="Return %"
+                      k="return_pct"
+                      active={sortKey}
+                      asc={sortAsc}
+                      onToggle={toggleSort}
+                    />
+                    <SortTh
+                      label="Vol ann. %"
+                      k="risk_ann_pct"
+                      active={sortKey}
+                      asc={sortAsc}
+                      onToggle={toggleSort}
+                    />
+                    <SortTh
+                      label="Sharpe"
+                      k="sharpe"
+                      active={sortKey}
+                      asc={sortAsc}
+                      onToggle={toggleSort}
+                    />
+                    <Table.Th c="dimmed">First bar</Table.Th>
+                    <Table.Th c="dimmed">Last bar</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
                   {sortedTickers.map((row) => (
-                    <tr key={row.ticker}>
-                      <td className="mono">{row.ticker}</td>
-                      <td>{formatPct(row.completeness_pct)}</td>
-                      <td>{row.longest_run_buckets}</td>
-                      <td>{row.raw_bar_count}</td>
-                      <td>{formatPct(row.return_pct)}</td>
-                      <td>{formatPct(row.risk_ann_pct)}</td>
-                      <td>{formatNum(row.sharpe, 3)}</td>
-                      <td className="mono muted">{row.first_ts?.slice(0, 10) ?? '—'}</td>
-                      <td className="mono muted">{row.last_ts?.slice(0, 10) ?? '—'}</td>
-                    </tr>
+                    <Table.Tr key={row.ticker}>
+                      <Table.Td ff="monospace">{row.ticker}</Table.Td>
+                      <Table.Td>{formatPct(row.completeness_pct)}</Table.Td>
+                      <Table.Td>{row.longest_run_buckets}</Table.Td>
+                      <Table.Td>{row.raw_bar_count}</Table.Td>
+                      <Table.Td>{formatPct(row.return_pct)}</Table.Td>
+                      <Table.Td>{formatPct(row.risk_ann_pct)}</Table.Td>
+                      <Table.Td>{formatNum(row.sharpe, 3)}</Table.Td>
+                      <Table.Td ff="monospace" c="dimmed">
+                        {row.first_ts?.slice(0, 10) ?? '—'}
+                      </Table.Td>
+                      <Table.Td ff="monospace" c="dimmed">
+                        {row.last_ts?.slice(0, 10) ?? '—'}
+                      </Table.Td>
+                    </Table.Tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          </Stack>
         </>
       )}
-    </div>
+    </PageScaffold>
   )
 }
 
 function ClassificationPiePanel({
   title,
   counts,
+  piePalette,
+  tooltipStyle,
+  chartMuted,
 }: {
   title: string
   counts: ClassificationLabelCount[]
+  piePalette: string[]
+  tooltipStyle: CSSProperties
+  chartMuted: string
 }) {
   const pieData = useMemo(() => collapseClassificationCounts(counts), [counts])
   const total = useMemo(() => pieData.reduce((s, x) => s + x.value, 0), [pieData])
 
   if (!pieData.length) {
     return (
-      <div className="table-wrap dashboard-chart-panel">
-        <div className="dashboard-chart-title">{title}</div>
-        <p className="muted" style={{ padding: '1rem', margin: 0, fontSize: '0.875rem' }}>
+      <Paper withBorder p="md" radius="md">
+        <Text fw={600} size="sm" mb="xs">
+          {title}
+        </Text>
+        <Text c="dimmed" size="sm">
           No classification rows for this universe.
-        </p>
-      </div>
+        </Text>
+      </Paper>
     )
   }
 
   return (
-    <div className="table-wrap dashboard-chart-panel">
-      <div className="dashboard-chart-title">{title}</div>
+    <Paper withBorder p="md" radius="md">
+      <Text fw={600} size="sm" mb="xs">
+        {title}
+      </Text>
       <div style={{ width: '100%', height: 260 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
@@ -440,22 +600,16 @@ function ClassificationPiePanel({
               cy="50%"
               outerRadius={78}
               paddingAngle={1}
-              stroke="var(--border)"
+              stroke={piePalette[3]}
               strokeWidth={1}
               isAnimationActive={false}
             >
               {pieData.map((entry, i) => (
-                <Cell key={`${entry.name}-${i}`} fill={PIE_PALETTE[i % PIE_PALETTE.length]} />
+                <Cell key={`${entry.name}-${i}`} fill={piePalette[i % piePalette.length]} />
               ))}
             </Pie>
             <Tooltip
-              contentStyle={{
-                background: 'var(--surface-panel)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius)',
-                color: 'var(--text)',
-                fontSize: '0.8125rem',
-              }}
+              contentStyle={tooltipStyle}
               formatter={(value: number) =>
                 total > 0
                   ? [`${value} (${((value / total) * 100).toFixed(1)}%)`, 'Tickers']
@@ -464,38 +618,32 @@ function ClassificationPiePanel({
             />
             <Legend
               wrapperStyle={{ fontSize: '0.72rem' }}
-              formatter={(value) => <span style={{ color: 'var(--text-muted)' }}>{value}</span>}
+              formatter={(value) => (
+                <span style={{ color: chartMuted }}>{value}</span>
+              )}
             />
           </PieChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </Paper>
   )
 }
 
 function KpiCard({ title, value, hint }: { title: string; value: string; hint?: string }) {
   return (
-    <div
-      style={{
-        minWidth: '10rem',
-        flex: '1 1 9rem',
-        padding: '0.65rem 0.85rem',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius)',
-        background: 'var(--surface-panel)',
-        boxShadow: 'var(--shadow)',
-      }}
-    >
-      <div className="muted" style={{ fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+    <Paper withBorder p="sm" radius="md">
+      <Text c="dimmed" size="xs" mb={4}>
         {title}
-      </div>
-      <div style={{ fontWeight: 600, color: 'var(--text-strong)', fontSize: '0.95rem' }}>{value}</div>
+      </Text>
+      <Text fw={600} size="sm">
+        {value}
+      </Text>
       {hint && (
-        <div className="muted" style={{ fontSize: '0.7rem', marginTop: '0.25rem' }}>
+        <Text c="dimmed" size="xs" mt={4}>
           {hint}
-        </div>
+        </Text>
       )}
-    </div>
+    </Paper>
   )
 }
 
@@ -514,39 +662,41 @@ function SortTh({
 }) {
   const on = active === k
   return (
-    <th>
-      <button
-        type="button"
-        onClick={() => onToggle(k)}
-        style={{
-          background: 'none',
-          border: 'none',
-          padding: 0,
-          font: 'inherit',
-          cursor: 'pointer',
-          color: on ? 'var(--accent)' : 'var(--text-muted)',
-          fontWeight: on ? 600 : 500,
-        }}
-      >
-        {label}
-        {on ? (asc ? ' ↑' : ' ↓') : ''}
-      </button>
-    </th>
+    <Table.Th>
+      <UnstyledButton onClick={() => onToggle(k)} fw={on ? 600 : 500}>
+        <Text span c={on ? 'yellow' : 'dimmed'} size="sm">
+          {label}
+          {on ? (asc ? ' ↑' : ' ↓') : ''}
+        </Text>
+      </UnstyledButton>
+    </Table.Th>
   )
 }
 
 function Heatmap({
   rows,
   buckets,
+  palette,
+  tickBorder,
+  stickyBg,
 }: {
   rows: TickerDashboardRow[]
   buckets: { index: number; start: string; end: string }[]
+  palette: HeatmapPalette
+  tickBorder: string
+  stickyBg: string
 }) {
   const n = buckets.length
-  if (!n || !rows.length) return <p className="muted">No coverage rows.</p>
+  if (!n || !rows.length) {
+    return (
+      <Text c="dimmed" size="sm">
+        No coverage rows.
+      </Text>
+    )
+  }
 
   return (
-    <div className="table-wrap dashboard-coverage-scroll">
+    <Paper withBorder p="xs" radius="md" style={{ overflow: 'auto' }}>
       <div style={{ minWidth: `${88 + n * 3}px` }}>
         <div style={{ display: 'flex', gap: 2, marginBottom: 6, paddingLeft: 88 }}>
           {buckets.map((b, i) => (
@@ -557,7 +707,7 @@ function Heatmap({
                 flex: 1,
                 minWidth: 2,
                 height: 4,
-                background: i % 12 === 0 ? 'var(--border-strong)' : 'transparent',
+                background: i % 12 === 0 ? tickBorder : 'transparent',
               }}
             />
           ))}
@@ -573,7 +723,6 @@ function Heatmap({
             }}
           >
             <span
-              className="mono"
               style={{
                 width: 80,
                 flexShrink: 0,
@@ -583,9 +732,10 @@ function Heatmap({
                 whiteSpace: 'nowrap',
                 position: 'sticky',
                 left: 0,
-                background: 'var(--surface-panel)',
+                background: stickyBg,
                 zIndex: 1,
                 paddingRight: 6,
+                fontFamily: 'var(--mantine-font-family-monospace)',
               }}
               title={row.ticker}
             >
@@ -593,17 +743,17 @@ function Heatmap({
             </span>
             {row.coverage.map((c, i) => {
               const meta = buckets[i]
-              const title = meta ? `${meta.start.slice(0, 10)}→${meta.end.slice(0, 10)}` : ''
+              const titleStr = meta ? `${meta.start.slice(0, 10)}→${meta.end.slice(0, 10)}` : ''
               return (
                 <span
                   key={i}
-                  title={title}
+                  title={titleStr}
                   style={{
                     flex: 1,
                     minWidth: 2,
                     height: 14,
                     borderRadius: 1,
-                    background: c ? 'var(--success)' : 'var(--error)',
+                    background: c ? palette.success : palette.error,
                     opacity: c ? 0.88 : 0.28,
                   }}
                 />
@@ -612,6 +762,6 @@ function Heatmap({
           </div>
         ))}
       </div>
-    </div>
+    </Paper>
   )
 }

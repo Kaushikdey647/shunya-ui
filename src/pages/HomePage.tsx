@@ -1,3 +1,4 @@
+import { Container, SimpleGrid, Stack, Text, Title } from '@mantine/core'
 import MacroStrip from '../components/home/MacroStrip'
 import HealthMiniCard from '../components/home/HealthMiniCard'
 import MarketHeadlines from '../components/home/MarketHeadlines'
@@ -7,27 +8,29 @@ import WatchlistCard from '../components/home/WatchlistCard'
 
 export default function HomePage() {
   return (
-    <div className="page-inner home-dashboard">
-      <header className="home-dashboard-header">
-        <h1 style={{ margin: 0 }}>Dashboard</h1>
-        <p className="muted" style={{ margin: '0.25rem 0 0', fontSize: '0.875rem' }}>
-          Macro context, movers, headlines, and your latest backtests.
-        </p>
-      </header>
+    <Container size="xl" px={{ base: 'sm', sm: 'md' }}>
+      <Stack gap="lg">
+        <Stack gap={4}>
+          <Title order={1}>Dashboard</Title>
+          <Text c="dimmed" size="sm">
+            Macro context, movers, headlines, and your latest backtests.
+          </Text>
+        </Stack>
 
-      <MacroStrip />
+        <MacroStrip />
 
-      <div className="home-main-split">
-        <div className="home-col-pulse stack">
-          <MoversPanel />
-          <MarketHeadlines />
-        </div>
-        <div className="home-col-engine stack">
-          <RecentBacktestsFeed />
-          <WatchlistCard />
-          <HealthMiniCard />
-        </div>
-      </div>
-    </div>
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+          <Stack gap="lg">
+            <MoversPanel />
+            <MarketHeadlines />
+          </Stack>
+          <Stack gap="lg">
+            <RecentBacktestsFeed />
+            <WatchlistCard />
+            <HealthMiniCard />
+          </Stack>
+        </SimpleGrid>
+      </Stack>
+    </Container>
   )
 }

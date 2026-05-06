@@ -1,10 +1,20 @@
+import {
+  Anchor,
+  Card,
+  SegmentedControl,
+  Stack,
+  Table,
+  Text,
+  Title,
+} from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
-import type { ReactElement } from 'react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getMarketMovers } from '../../api/endpoints'
 import type { MoversKind } from '../../api/types'
+import { useMantineTableDensity } from '../../hooks/useMantineTableDensity'
 import ApiErrorAlert from '../ApiErrorAlert'
+import { SignedPctText } from '../../lib/signedPct'
 
 const TABS: { id: MoversKind; label: string }[] = [
   { id: 'gainers', label: 'Top gainers' },
@@ -20,19 +30,9 @@ function fmtVol(v: number | null | undefined): string {
   return String(Math.round(v))
 }
 
-function pctCell(v: number | null | undefined): ReactElement {
-  if (v == null || !Number.isFinite(v)) return <span className="home-metric-muted">—</span>
-  const cls = v > 0 ? 'home-pct-pos' : v < 0 ? 'home-pct-neg' : 'home-metric-muted'
-  return (
-    <span className={cls}>
-      {v >= 0 ? '+' : ''}
-      {v.toFixed(2)}%
-    </span>
-  )
-}
-
 export default function MoversPanel() {
   const [tab, setTab] = useState<MoversKind>('gainers')
+  const tableProps = useMantineTableDensity()
   const q = useQuery({
     queryKey: ['market', 'movers', tab],
     queryFn: () => getMarketMovers({ kind: tab, limit: 25 }),
@@ -40,64 +40,72 @@ export default function MoversPanel() {
   })
 
   return (
-    <div className="dashboard-chart-panel home-movers-panel">
-      <div className="dashboard-chart-title">Movers</div>
-      <div className="home-tab-row" role="tablist" aria-label="Movers screener">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.id}
-            className={`home-tab${tab === t.id ? ' home-tab-active' : ''}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-      <ApiErrorAlert error={q.error} />
-      {q.isLoading && <p className="muted">Loading movers…</p>}
-      {!q.isLoading && q.data && (
-        <div className="table-wrap home-movers-scroll">
-          <table className="data home-dense-table">
-            <thead>
-              <tr>
-                <th>Ticker</th>
-                <th>Price</th>
-                <th>%</th>
-                <th>Volume</th>
-              </tr>
-            </thead>
-            <tbody>
-              {q.data.rows.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="muted">
-                    No rows
-                  </td>
-                </tr>
-              ) : (
-                q.data.rows.map((r) => (
-                  <tr key={r.ticker}>
-                    <td>
-                      <Link to={`/instruments/${encodeURIComponent(r.ticker)}`} className="mono">
-                        {r.ticker}
-                      </Link>
-                    </td>
-                    <td className="mono">
-                      {r.price != null && Number.isFinite(r.price)
-                        ? r.price.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                        : '—'}
-                    </td>
-                    <td className="mono">{pctCell(r.pct_change)}</td>
-                    <td className="mono">{fmtVol(r.volume)}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+    <Card padding="md" radius="md" withBorder>
+      <Stack gap="md">
+        <Title order={5}>Movers</Title>
+        <SegmentedControl
+          fullWidth
+          value={tab}
+          onChange={(v) => setTab(v as MoversKind)}
+          data={TABS.map((t) => ({ label: t.label, value: t.id }))}
+        />
+        <ApiErrorAlert error={q.error} />
+        {q.isLoading && (
+          <Text c="dimmed" size="sm">
+            Loading movers…
+          </Text>
+        )}
+        {!q.isLoading && q.data && (
+          <Table.ScrollContainer minWidth={280} mih={200} mah={400}>
+            <Table {...tableProps}>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Ticker</Table.Th>
+                  <Table.Th>Price</Table.Th>
+                  <Table.Th>%</Table.Th>
+                  <Table.Th>Volume</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {q.data.rows.length === 0 ? (
+                  <Table.Tr>
+                    <Table.Td colSpan={4}>
+                      <Text c="dimmed" size="sm">
+                        No rows
+                      </Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ) : (
+                  q.data.rows.map((r) => (
+                    <Table.Tr key={r.ticker}>
+                      <Table.Td>
+                        <Anchor component={Link} to={`/instruments/${encodeURIComponent(r.ticker)}`} ff="monospace" size="sm">
+                          {r.ticker}
+                        </Anchor>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text ff="monospace" size="sm">
+                          {r.price != null && Number.isFinite(r.price)
+                            ? r.price.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                            : '—'}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <SignedPctText v={r.pct_change} />
+                      </Table.Td>
+                      <Table.Td>
+                        <Text ff="monospace" size="sm">
+                          {fmtVol(r.volume)}
+                        </Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))
+                )}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        )}
+      </Stack>
+    </Card>
   )
 }

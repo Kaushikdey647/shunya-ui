@@ -1,3 +1,14 @@
+import {
+  Accordion,
+  Button,
+  Checkbox,
+  Code,
+  Select,
+  Stack,
+  Text,
+  Textarea,
+  TextInput,
+} from '@mantine/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -27,9 +38,7 @@ function initialAdvForIndexBacktest(): FinTsAdvancedState {
 
 export type BacktestConfigPanelProps = {
   alphaId: string
-  /** Target form for external sticky submit button (`form` attribute). */
   formId: string
-  /** Hide inline submit when using a sticky footer button with `form={formId}`. */
   hideInlineSubmit?: boolean
   onEnqueueSuccess?: (job: BacktestJobOut) => void
 }
@@ -75,7 +84,6 @@ export default function BacktestConfigPanel({
   )
 
   useEffect(() => {
-    // Sync selected index when equity index list loads / changes (same as legacy backtest page).
     if (!indexCode || !indicesWithMembers.length) return
     if (!indicesWithMembers.some((x) => x.code === indexCode)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- invalidate stale index selection when catalog updates
@@ -88,6 +96,24 @@ export default function BacktestConfigPanel({
     const row = indicesQ.data.find((x) => x.code === indexCode)
     return row?.benchmark_ticker ?? null
   }, [indexCode, indicesQ.data])
+
+  const indexSelectData = useMemo(() => {
+    const placeholder =
+      indicesQ.isLoading
+        ? 'Loading…'
+        : indicesWithMembers.length
+          ? 'Select…'
+          : indicesQ.data?.length
+            ? 'No index has members yet (sync memberships)'
+            : 'No indices (run DB migrations)'
+    return [
+      { value: '', label: placeholder },
+      ...indicesWithMembers.map((ix) => ({
+        value: ix.code,
+        label: `${ix.display_name} (${ix.member_count} members)`,
+      })),
+    ]
+  }, [indicesQ.isLoading, indicesQ.data?.length, indicesWithMembers])
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -150,163 +176,137 @@ export default function BacktestConfigPanel({
 
       <form
         id={formId}
-        className="form-grid"
         onSubmit={(e) => {
           e.preventDefault()
           mutation.mutate()
         }}
       >
-        <label>
-          Index universe
-          <select
+        <Stack gap="md">
+          <Select
+            label="Index universe"
+            data={indexSelectData}
             value={indexCode}
-            onChange={(e) => setIndexCode(e.target.value)}
+            onChange={(v) => setIndexCode(v ?? '')}
             required
             disabled={indicesQ.isLoading || !indicesWithMembers.length}
-          >
-            <option value="">
-              {indicesQ.isLoading
-                ? 'Loading…'
-                : indicesWithMembers.length
-                  ? 'Select…'
-                  : indicesQ.data?.length
-                    ? 'No index has members yet (sync memberships)'
-                    : 'No indices (run DB migrations)'}
-            </option>
-            {indicesWithMembers.map((ix) => (
-              <option key={ix.code} value={ix.code}>
-                {ix.display_name} ({ix.member_count} members)
-              </option>
-            ))}
-          </select>
-        </label>
+          />
 
-        {!indicesQ.isLoading &&
-          indicesQ.data &&
-          indicesQ.data.length > 0 &&
-          indicesWithMembers.length === 0 && (
-            <p className="muted" style={{ margin: 0 }}>
-              Timescale has index catalog rows but no{' '}
-              <code className="mono">symbol_index_membership</code> data. From the repo:{' '}
-              <code className="mono">shunya-timescale sync-index-memberships</code> (or run{' '}
-              <code className="mono">scripts/bootstrap_sp500_ohlcv.py</code>
-              ), then refresh this page.
-            </p>
+          {!indicesQ.isLoading &&
+            indicesQ.data &&
+            indicesQ.data.length > 0 &&
+            indicesWithMembers.length === 0 && (
+              <Text size="sm" c="dimmed">
+                Timescale has index catalog rows but no{' '}
+                <Code>symbol_index_membership</Code> data. From the repo:{' '}
+                <Code>shunya-timescale sync-index-memberships</Code> (or run{' '}
+                <Code>scripts/bootstrap_sp500_ohlcv.py</Code>
+                ), then refresh this page.
+              </Text>
+            )}
+
+          {selectedBenchmark && (
+            <Text size="sm" c="dimmed">
+              Benchmark index (raw ticker):{' '}
+              <Text span ff="monospace">
+                {selectedBenchmark}
+              </Text>
+            </Text>
           )}
 
-        {selectedBenchmark && (
-          <p className="muted" style={{ margin: 0 }}>
-            Benchmark index (raw ticker): <span className="mono">{selectedBenchmark}</span>
-          </p>
-        )}
+          <Stack gap="xs">
+            <Text size="sm" c="dimmed">
+              <Text span fw={700}>
+                Tune
+              </Text>{' '}
+              window:{' '}
+              <Code>{BACKTEST_SIM_START}</Code> – <Code>{BACKTEST_TEST_START}</Code> (end exclusive).{' '}
+              <Text span fw={700}>
+                Test
+              </Text>{' '}
+              window: <Code>{BACKTEST_TEST_START}</Code> –{' '}
+              <Code>{BACKTEST_SIM_END_EXCLUSIVE}</Code> (end exclusive).
+            </Text>
+            <Text size="sm" c="dimmed">
+              Simulation always uses <strong>daily</strong> bars over <Code>{BACKTEST_SIM_START}</Code>{' '}
+              through the last bar before <Code>{BACKTEST_SIM_END_EXCLUSIVE}</Code> (same range the
+              server enforces).
+            </Text>
+          </Stack>
 
-        <div className="muted stack" style={{ gap: '0.35rem' }}>
-          <p style={{ margin: 0 }}>
-            <strong>Tune</strong> window:{' '}
-            <span className="mono">{BACKTEST_SIM_START}</span> –{' '}
-            <span className="mono">{BACKTEST_TEST_START}</span> (end exclusive).{' '}
-            <strong>Test</strong> window:{' '}
-            <span className="mono">{BACKTEST_TEST_START}</span> –{' '}
-            <span className="mono">{BACKTEST_SIM_END_EXCLUSIVE}</span> (end exclusive).
-          </p>
-          <p style={{ margin: 0 }}>
-            Simulation always uses <strong>daily</strong> bars over{' '}
-            <span className="mono">{BACKTEST_SIM_START}</span> through the last bar before{' '}
-            <span className="mono">{BACKTEST_SIM_END_EXCLUSIVE}</span> (same range the server
-            enforces).
-          </p>
-        </div>
-
-        <label className="row">
-          <input
-            type="checkbox"
+          <Checkbox
+            label={`Include test period (${BACKTEST_TEST_START.slice(0, 4)}–${BACKTEST_SIM_END_EXCLUSIVE.slice(0, 4)}) in results`}
             checked={includeTestInResults}
-            onChange={(e) => setIncludeTestInResults(e.target.checked)}
+            onChange={(e) => setIncludeTestInResults(e.currentTarget.checked)}
           />
-          Include test period ({BACKTEST_TEST_START.slice(0, 4)}–
-          {BACKTEST_SIM_END_EXCLUSIVE.slice(0, 4)}) in results
-        </label>
 
-        <label className="row">
-          <input
-            type="checkbox"
+          <Checkbox
+            label="Skip index members with no OHLCV in the simulation window (benchmark ticker must still have data in Timescale)"
             checked={omitMembersMissingOhlcv}
-            onChange={(e) => setOmitMembersMissingOhlcv(e.target.checked)}
+            onChange={(e) => setOmitMembersMissingOhlcv(e.currentTarget.checked)}
           />
-          Skip index members with no OHLCV in the simulation window (benchmark ticker must still
-          have data in Timescale)
-        </label>
 
-        <FinTsAdvancedSection
-          state={finTsAdv}
-          setState={setFinTsAdv}
-          timescaleOnly
-          hideBarSpec
-        />
+          <FinTsAdvancedSection
+            state={finTsAdv}
+            setState={setFinTsAdv}
+            timescaleOnly
+            hideBarSpec
+          />
 
-        <details className="advanced">
-          <summary>Advanced (overrides, finbt)</summary>
-          <div className="form-grid" style={{ marginTop: '0.75rem' }}>
-            <label>
-              Finstrat override (JSON, optional)
-              <textarea
-                value={finstratOverrideJson}
-                onChange={(e) => setFinstratOverrideJson(e.target.value)}
-                placeholder="{}"
-              />
-            </label>
-            <label>
-              finbt.cash
-              <input
-                type="number"
-                value={finbtCash}
-                onChange={(e) => setFinbtCash(e.target.value)}
-              />
-            </label>
-            <label>
-              finbt.commission
-              <input
-                type="number"
-                step="any"
-                value={finbtCommission}
-                onChange={(e) => setFinbtCommission(e.target.value)}
-              />
-            </label>
-            <label>
-              finbt.slippage_pct
-              <input
-                type="number"
-                step="any"
-                value={finbtSlippage}
-                onChange={(e) => setFinbtSlippage(e.target.value)}
-              />
-            </label>
-            <label>
-              finbt.sector_group_column
-              <input
-                type="text"
-                value={finbtSectorGroupCol}
-                onChange={(e) => setFinbtSectorGroupCol(e.target.value)}
-              />
-            </label>
-            <label className="row">
-              <input
-                type="checkbox"
-                checked={finbtValidateFinite}
-                onChange={(e) => setFinbtValidateFinite(e.target.checked)}
-              />
-              finbt.validate_finite_targets
-            </label>
-          </div>
-        </details>
+          <Accordion variant="separated" radius="md">
+            <Accordion.Item value="adv-finbt">
+              <Accordion.Control>Advanced (overrides, finbt)</Accordion.Control>
+              <Accordion.Panel>
+                <Stack gap="md" mt="xs">
+                  <Textarea
+                    label="Finstrat override (JSON, optional)"
+                    value={finstratOverrideJson}
+                    onChange={(e) => setFinstratOverrideJson(e.target.value)}
+                    placeholder="{}"
+                    minRows={3}
+                    ff="monospace"
+                    fz="sm"
+                  />
+                  <TextInput
+                    label="finbt.cash"
+                    type="number"
+                    value={finbtCash}
+                    onChange={(e) => setFinbtCash(e.target.value)}
+                  />
+                  <TextInput
+                    label="finbt.commission"
+                    type="number"
+                    step="any"
+                    value={finbtCommission}
+                    onChange={(e) => setFinbtCommission(e.target.value)}
+                  />
+                  <TextInput
+                    label="finbt.slippage_pct"
+                    type="number"
+                    step="any"
+                    value={finbtSlippage}
+                    onChange={(e) => setFinbtSlippage(e.target.value)}
+                  />
+                  <TextInput
+                    label="finbt.sector_group_column"
+                    value={finbtSectorGroupCol}
+                    onChange={(e) => setFinbtSectorGroupCol(e.target.value)}
+                  />
+                  <Checkbox
+                    label="finbt.validate_finite_targets"
+                    checked={finbtValidateFinite}
+                    onChange={(e) => setFinbtValidateFinite(e.currentTarget.checked)}
+                  />
+                </Stack>
+              </Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
 
-        {!hideInlineSubmit && (
-          <div className="row">
-            <button type="submit" className="btn btn-primary" disabled={mutation.isPending}>
+          {!hideInlineSubmit && (
+            <Button type="submit" color="yellow" disabled={mutation.isPending}>
               {mutation.isPending ? 'Enqueueing…' : 'Run backtest'}
-            </button>
-          </div>
-        )}
+            </Button>
+          )}
+        </Stack>
       </form>
     </>
   )

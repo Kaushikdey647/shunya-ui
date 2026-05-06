@@ -1,3 +1,21 @@
+import {
+  Alert,
+  Anchor,
+  Button,
+  Checkbox,
+  Code,
+  Group,
+  NumberInput,
+  Paper,
+  ScrollArea,
+  SimpleGrid,
+  Stack,
+  Table,
+  Tabs,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -22,6 +40,8 @@ import AlphaSourceEditor from '../components/AlphaSourceEditor'
 import BacktestConfigPanel from '../components/BacktestConfigPanel'
 import BacktestResultCharts from '../components/BacktestResultCharts'
 import FinStratConfigForm from '../components/FinStratConfigForm'
+import PageScaffold from '../components/PageScaffold'
+import { useMantineTableDensity } from '../hooks/useMantineTableDensity'
 import {
   alphaDetailsSchema,
   finstratFromServer,
@@ -38,11 +58,11 @@ export default function AlphaStudioLayout() {
 }
 
 export function StudioAlphaHub() {
+  const density = useMantineTableDensity()
   const navigate = useNavigate()
   const [limit, setLimit] = useState(100)
   const [offset, setOffset] = useState(0)
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
-  const headerCbRef = useRef<HTMLInputElement>(null)
   const qc = useQueryClient()
 
   const q = useQuery({
@@ -61,13 +81,6 @@ export function StudioAlphaHub() {
   const allOnPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selected.has(id))
   const someOnPageSelected = pageIds.some((id) => selected.has(id))
-
-  useEffect(() => {
-    const el = headerCbRef.current
-    if (el) {
-      el.indeterminate = someOnPageSelected && !allOnPageSelected
-    }
-  }, [someOnPageSelected, allOnPageSelected])
 
   const delMut = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -126,71 +139,57 @@ export function StudioAlphaHub() {
   }
 
   return (
-    <div className="page-inner stack">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>Alpha Studio</h1>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => navigate('/studio/new')}
-        >
+    <PageScaffold>
+      <Group justify="space-between" align="flex-start" wrap="wrap">
+        <Title order={1}>Alpha Studio</Title>
+        <Button color="yellow" onClick={() => navigate('/studio/new')}>
           New alpha
-        </button>
-      </div>
-      <p className="muted">
+        </Button>
+      </Group>
+      <Text c="dimmed" size="sm">
         Select an alpha to open the unified workspace (metadata, strategy, source, backtest, console,
         results).
-      </p>
+      </Text>
 
-      <div className="row">
-        <label>
-          Limit{' '}
-          <input
-            type="number"
-            min={1}
-            max={500}
-            value={limit}
-            onChange={(e) => {
-              setLimit(Number(e.target.value) || 100)
-              setOffset(0)
-            }}
-            style={{ width: '5rem' }}
-          />
-        </label>
-        <label>
-          Offset{' '}
-          <input
-            type="number"
-            min={0}
-            value={offset}
-            onChange={(e) => setOffset(Number(e.target.value) || 0)}
-            style={{ width: '5rem' }}
-          />
-        </label>
-        <button
-          type="button"
-          className="btn"
-          disabled={offset === 0}
-          onClick={() => setOffset((o) => Math.max(0, o - limit))}
-        >
+      <Group align="flex-end" wrap="wrap">
+        <NumberInput
+          label="Limit"
+          min={1}
+          max={500}
+          value={limit}
+          onChange={(v) => {
+            setLimit(typeof v === 'number' && v > 0 ? v : 100)
+            setOffset(0)
+          }}
+          w={100}
+        />
+        <NumberInput
+          label="Offset"
+          min={0}
+          value={offset}
+          onChange={(v) => setOffset(typeof v === 'number' && v >= 0 ? v : 0)}
+          w={100}
+        />
+        <Button variant="default" disabled={offset === 0} onClick={() => setOffset((o) => Math.max(0, o - limit))}>
           Previous page
-        </button>
-        <button
-          type="button"
-          className="btn"
+        </Button>
+        <Button
+          variant="default"
           disabled={!q.data || q.data.length < limit}
           onClick={() => setOffset((o) => o + limit)}
         >
           Next page
-        </button>
-      </div>
+        </Button>
+      </Group>
 
       {selected.size > 0 && (
-        <div className="row" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <span className="muted">{selected.size} selected</span>
-          <button
-            type="button"
-            className="btn btn-danger"
+        <Group align="center" wrap="wrap" gap="sm">
+          <Text c="dimmed" size="sm">
+            {selected.size} selected
+          </Text>
+          <Button
+            color="red"
+            variant="light"
             disabled={delMut.isPending}
             onClick={() => {
               const ids = rows.filter((a) => selected.has(a.id)).map((a) => a.id)
@@ -203,73 +202,83 @@ export function StudioAlphaHub() {
             }}
           >
             Delete selected
-          </button>
-        </div>
+          </Button>
+        </Group>
       )}
 
       <ApiErrorAlert error={q.error} />
       <ApiErrorAlert error={delMut.error} />
-      {q.isLoading && <p className="muted">Loading…</p>}
+      {q.isLoading && (
+        <Text c="dimmed" size="sm">
+          Loading…
+        </Text>
+      )}
 
       {q.data && (
-        <div className="table-wrap">
-          <table className="data">
-            <thead>
-              <tr>
-                <th style={{ width: '2.5rem' }}>
-                  <input
-                    ref={headerCbRef}
-                    type="checkbox"
-                    aria-label="Select all on this page"
-                    checked={allOnPageSelected}
-                    disabled={rows.length === 0 || delMut.isPending}
-                    onChange={toggleAllOnPage}
-                  />
-                </th>
-                <th>Name</th>
-                <th>ID</th>
-                <th>Import ref</th>
-                <th>Updated</th>
-                <th style={{ width: '6rem' }} />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((a) => (
-                <tr key={a.id}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(a.id)}
-                      disabled={delMut.isPending}
-                      aria-label={`Select ${a.name}`}
-                      onChange={() => toggleOne(a.id)}
+        <Stack gap="sm">
+          <Table.ScrollContainer minWidth={640}>
+            <Table {...density} striped highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th w="2.5rem">
+                    <Checkbox
+                      aria-label="Select all on this page"
+                      checked={allOnPageSelected}
+                      indeterminate={someOnPageSelected && !allOnPageSelected}
+                      disabled={rows.length === 0 || delMut.isPending}
+                      onChange={toggleAllOnPage}
                     />
-                  </td>
-                  <td>
-                    <Link to={`/studio/${encodeURIComponent(a.id)}`}>{a.name}</Link>
-                  </td>
-                  <td className="mono">{a.id}</td>
-                  <td className="mono">{a.import_ref}</td>
-                  <td>{new Date(a.updated_at).toLocaleString()}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn btn-danger"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem' }}
-                      disabled={delMut.isPending}
-                      onClick={() => confirmDeleteAlphas([a.id], a.name)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {q.data.length === 0 && <p className="muted">No alphas.</p>}
-        </div>
+                  </Table.Th>
+                  <Table.Th>Name</Table.Th>
+                  <Table.Th>ID</Table.Th>
+                  <Table.Th>Import ref</Table.Th>
+                  <Table.Th>Updated</Table.Th>
+                  <Table.Th w="6rem" />
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {rows.map((a) => (
+                  <Table.Tr key={a.id}>
+                    <Table.Td>
+                      <Checkbox
+                        checked={selected.has(a.id)}
+                        disabled={delMut.isPending}
+                        aria-label={`Select ${a.name}`}
+                        onChange={() => toggleOne(a.id)}
+                      />
+                    </Table.Td>
+                    <Table.Td>
+                      <Anchor component={Link} to={`/studio/${encodeURIComponent(a.id)}`}>
+                        {a.name}
+                      </Anchor>
+                    </Table.Td>
+                    <Table.Td ff="monospace">{a.id}</Table.Td>
+                    <Table.Td ff="monospace">{a.import_ref}</Table.Td>
+                    <Table.Td>{new Date(a.updated_at).toLocaleString()}</Table.Td>
+                    <Table.Td>
+                      <Button
+                        color="red"
+                        variant="light"
+                        size="compact-sm"
+                        disabled={delMut.isPending}
+                        onClick={() => confirmDeleteAlphas([a.id], a.name)}
+                      >
+                        Delete
+                      </Button>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+          {q.data.length === 0 && (
+            <Text c="dimmed" size="sm">
+              No alphas.
+            </Text>
+          )}
+        </Stack>
       )}
-    </div>
+    </PageScaffold>
   )
 }
 
@@ -321,48 +330,50 @@ export function StudioAlphaCreate() {
   })
 
   return (
-    <div className="page-inner stack">
-      <div className="row">
-        <Link to="/studio" className="btn">
-          ← Studio
-        </Link>
-      </div>
-      <h1>New alpha</h1>
+    <PageScaffold>
+      <Button component={Link} to="/studio" variant="default">
+        ← Studio
+      </Button>
+      <Title order={1}>New alpha</Title>
 
       <ApiErrorAlert error={mutation.error} />
       {mutation.error instanceof Error && !('status' in (mutation.error as object)) && (
-        <p className="alert alert-error">{mutation.error.message}</p>
+        <Alert color="red" variant="light">
+          {mutation.error.message}
+        </Alert>
       )}
       {mutation.error instanceof ApiError && mutation.error.status === 409 && (
-        <p className="muted">Choose a different name (duplicate).</p>
+        <Text c="dimmed" size="sm">
+          Choose a different name (duplicate).
+        </Text>
       )}
 
-      <div className="alpha-detail-grid">
-        <section className="stack alpha-detail-col-code">
-          <h2>Alpha source (Python + JAX)</h2>
-          <p className="muted small">
-            Define a top-level <code>alpha(ctx)</code> function. After creation you can edit metadata
-            and strategy in Studio.
-          </p>
+      <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
+        <Stack gap="md">
+          <Title order={2} size="h4">
+            Alpha source (Python + JAX)
+          </Title>
+          <Text c="dimmed" size="sm">
+            Define a top-level <Code>alpha(ctx)</Code> function. After creation you can edit metadata and
+            strategy in Studio.
+          </Text>
           <AlphaSourceEditor value={code} onChange={setCode} height="52vh" />
-        </section>
-        <section className="stack alpha-detail-col-meta">
-          <h2>Details</h2>
-          <form className="form-grid" onSubmit={form.handleSubmit((v) => mutation.mutate(v))}>
-            <label>
-              Name
-              <input type="text" {...form.register('name')} autoComplete="off" />
-              {form.formState.errors.name && (
-                <span className="alert alert-error">{form.formState.errors.name.message}</span>
-              )}
-            </label>
-            <label>
-              Description (optional)
-              <input type="text" {...form.register('description')} />
-            </label>
-            <h3 className="finstrat-form-title">Strategy config</h3>
-            <p className="muted small">Adjust below, then create — values are sent with the request.</p>
-          </form>
+        </Stack>
+
+        <Stack gap="md">
+          <Title order={2} size="h4">
+            Details
+          </Title>
+          <Stack component="form" gap="sm" onSubmit={form.handleSubmit((v) => mutation.mutate(v))}>
+            <TextInput label="Name" autoComplete="off" {...form.register('name')} error={form.formState.errors.name?.message} />
+            <TextInput label="Description (optional)" {...form.register('description')} />
+            <Title order={3} size="h5" mt="sm">
+              Strategy config
+            </Title>
+            <Text c="dimmed" size="xs">
+              Adjust below, then create — values are sent with the request.
+            </Text>
+          </Stack>
           <FinStratConfigForm
             resetKey="new"
             config={defaultFinStratConfig}
@@ -371,19 +382,16 @@ export function StudioAlphaCreate() {
             submitLabel="Apply strategy to draft (optional)"
             onSubmit={setFinstratDraft}
           />
-          <div className="row">
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={mutation.isPending}
-              onClick={() => form.handleSubmit((v) => mutation.mutate(v))()}
-            >
-              {mutation.isPending ? 'Creating…' : 'Create alpha'}
-            </button>
-          </div>
-        </section>
-      </div>
-    </div>
+          <Button
+            color="yellow"
+            disabled={mutation.isPending}
+            onClick={() => form.handleSubmit((v) => mutation.mutate(v))()}
+          >
+            {mutation.isPending ? 'Creating…' : 'Create alpha'}
+          </Button>
+        </Stack>
+      </SimpleGrid>
+    </PageScaffold>
   )
 }
 
@@ -405,12 +413,12 @@ export function AlphaStudioWorkspace() {
   const { alphaId } = useParams<{ alphaId: string }>()
   if (!alphaId) {
     return (
-      <div className="page-inner">
-        <p className="muted">Missing alpha id.</p>
-        <Link to="/studio" className="btn">
+      <PageScaffold>
+        <Text c="dimmed">Missing alpha id.</Text>
+        <Button component={Link} to="/studio" variant="default">
           ← Studio
-        </Link>
-      </div>
+        </Button>
+      </PageScaffold>
     )
   }
   return <AlphaStudioWorkspaceInner alphaId={alphaId} />
@@ -535,149 +543,124 @@ function AlphaStudioWorkspaceInner({ alphaId }: { alphaId: string }) {
         )
       : synth.join('\n')
 
-  const tabBtn = (id: RailTab, label: string) => (
-    <button
-      key={id}
-      type="button"
-      role="tab"
-      aria-selected={railTab === id}
-      className={`studio-rail-tab${railTab === id ? ' studio-rail-tab-active' : ''}`}
-      onClick={() => setRailTab(id)}
-    >
-      {label}
-    </button>
-  )
-
   return (
-    <div className="page-inner studio-shell stack">
-      <div className="row" style={{ flexWrap: 'wrap', gap: '0.5rem 1rem' }}>
-        <Link to="/studio" className="btn">
-          ← Studio
-        </Link>
-      </div>
+    <PageScaffold size="xl">
+      <Button component={Link} to="/studio" variant="default">
+        ← Studio
+      </Button>
 
       <ApiErrorAlert error={alphaQ.error} />
-      {alphaQ.isLoading && <p className="muted">Loading alpha…</p>}
-      {!alphaQ.isLoading && !alphaQ.data && <p className="muted">Alpha not found.</p>}
+      {alphaQ.isLoading && (
+        <Text c="dimmed" size="sm">
+          Loading alpha…
+        </Text>
+      )}
+      {!alphaQ.isLoading && !alphaQ.data && (
+        <Text c="dimmed" size="sm">
+          Alpha not found.
+        </Text>
+      )}
 
       {alphaQ.data && (
-        <>
-          <header className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <div>
-              <h1 style={{ marginBottom: '0.15rem' }}>{alphaQ.data.name}</h1>
-              <p className="mono muted small" style={{ margin: 0 }}>
-                Studio · <span className="tabular-nums">{alphaQ.data.id}</span>
-              </p>
-            </div>
-          </header>
+        <Stack gap="lg">
+          <div>
+            <Title order={1}>{alphaQ.data.name}</Title>
+            <Text ff="monospace" c="dimmed" size="xs" style={{ fontVariantNumeric: 'tabular-nums' }}>
+              Studio · {alphaQ.data.id}
+            </Text>
+          </div>
 
-          <div className="studio-main-grid">
-            <section className="studio-editor-col stack">
-              <h2 className="studio-panel-title">Alpha source</h2>
+          <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="lg">
+            <Stack gap="sm">
+              <Title order={2} size="h4">
+                Alpha source
+              </Title>
               <ApiErrorAlert error={codeMut.error} />
               <AlphaSourceEditor value={code} onChange={setCode} height="52vh" />
-              <div className="row">
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={codeMut.isPending}
-                  onClick={() => codeMut.mutate(code)}
-                >
-                  {codeMut.isPending ? 'Saving…' : 'Save code'}
-                </button>
-              </div>
-            </section>
+              <Button color="yellow" disabled={codeMut.isPending} onClick={() => codeMut.mutate(code)}>
+                {codeMut.isPending ? 'Saving…' : 'Save code'}
+              </Button>
+            </Stack>
 
-            <section className="studio-rail stack">
-              <div className="studio-rail-tabs" role="tablist" aria-label="Studio panels">
-                {tabBtn('details', 'Details')}
-                {tabBtn('strategy', 'Strategy')}
-                {tabBtn('config', 'Backtest')}
-                {tabBtn('console', 'Console')}
-                {tabBtn('results', 'Results')}
-              </div>
+            <Paper withBorder p="md" radius="md">
+              <Tabs value={railTab} onChange={(v) => v && setRailTab(v as RailTab)}>
+                <Tabs.List grow>
+                  <Tabs.Tab value="details">Details</Tabs.Tab>
+                  <Tabs.Tab value="strategy">Strategy</Tabs.Tab>
+                  <Tabs.Tab value="config">Backtest</Tabs.Tab>
+                  <Tabs.Tab value="console">Console</Tabs.Tab>
+                  <Tabs.Tab value="results">Results</Tabs.Tab>
+                </Tabs.List>
 
-              <div className="studio-rail-body">
-                <div
-                  className="stack"
-                  style={{ display: railTab === 'details' ? 'block' : 'none' }}
-                  aria-hidden={railTab !== 'details'}
-                >
-                  <h3 className="studio-panel-title">Metadata</h3>
-                  <ApiErrorAlert error={detailsMut.error} />
-                  <form
-                    className="form-grid"
-                    onSubmit={detailsForm.handleSubmit((v) => {
-                      if (!alphaQ.data) return
-                      const body: { name?: string; description?: string | null } = {}
-                      if (v.name != null && v.name !== alphaQ.data.name) body.name = v.name
-                      const desc = v.description === '' ? null : v.description
-                      if (desc !== (alphaQ.data.description ?? null)) body.description = desc
-                      if (Object.keys(body).length === 0) return
-                      detailsMut.mutate(body)
-                    })}
-                  >
-                    <label>
-                      Name
-                      <input type="text" {...detailsForm.register('name')} />
-                    </label>
-                    <label>
-                      Description
-                      <input type="text" {...detailsForm.register('description')} />
-                    </label>
-                    {alphaQ.data.import_ref && (
-                      <label>
-                        Module import (read-only; overridden when inline source is saved)
-                        <input
-                          className="mono"
-                          type="text"
+                <Tabs.Panel value="details" pt="md">
+                  <Stack gap="md">
+                    <Title order={3} size="h5">
+                      Metadata
+                    </Title>
+                    <ApiErrorAlert error={detailsMut.error} />
+                    <Stack
+                      component="form"
+                      gap="sm"
+                      onSubmit={detailsForm.handleSubmit((v) => {
+                        if (!alphaQ.data) return
+                        const body: { name?: string; description?: string | null } = {}
+                        if (v.name != null && v.name !== alphaQ.data.name) body.name = v.name
+                        const desc = v.description === '' ? null : v.description
+                        if (desc !== (alphaQ.data.description ?? null)) body.description = desc
+                        if (Object.keys(body).length === 0) return
+                        detailsMut.mutate(body)
+                      })}
+                    >
+                      <TextInput label="Name" {...detailsForm.register('name')} />
+                      <TextInput label="Description" {...detailsForm.register('description')} />
+                      {alphaQ.data.import_ref && (
+                        <TextInput
+                          label="Module import (read-only; overridden when inline source is saved)"
                           readOnly
+                          ff="monospace"
                           value={alphaQ.data.import_ref}
+                          onChange={() => {}}
                         />
-                      </label>
-                    )}
-                    {detailsForm.formState.errors.name && (
-                      <span className="alert alert-error">
-                        {detailsForm.formState.errors.name.message}
-                      </span>
-                    )}
-                    <div className="row">
-                      <button type="submit" className="btn" disabled={detailsMut.isPending}>
+                      )}
+                      {detailsForm.formState.errors.name && (
+                        <Text size="sm" c="red">
+                          {detailsForm.formState.errors.name.message}
+                        </Text>
+                      )}
+                      <Button type="submit" variant="default" disabled={detailsMut.isPending}>
                         {detailsMut.isPending ? 'Saving…' : 'Save metadata'}
-                      </button>
-                    </div>
-                  </form>
+                      </Button>
+                    </Stack>
 
-                  <h3 className="studio-panel-title" style={{ marginTop: '1rem' }}>
-                    Delete alpha
-                  </h3>
-                  <ApiErrorAlert error={delMut.error} />
-                  {delMut.error instanceof ApiError && delMut.error.status === 409 && (
-                    <p className="muted">Cannot delete while backtest jobs reference this alpha.</p>
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    disabled={delMut.isPending}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          'Delete this alpha? This cannot be undone if the server allows it.',
-                        )
-                      ) {
-                        delMut.mutate()
-                      }
-                    }}
-                  >
-                    {delMut.isPending ? 'Deleting…' : 'Delete alpha'}
-                  </button>
-                </div>
+                    <Title order={3} size="h5">
+                      Delete alpha
+                    </Title>
+                    <ApiErrorAlert error={delMut.error} />
+                    {delMut.error instanceof ApiError && delMut.error.status === 409 && (
+                      <Text c="dimmed" size="sm">
+                        Cannot delete while backtest jobs reference this alpha.
+                      </Text>
+                    )}
+                    <Button
+                      color="red"
+                      variant="light"
+                      disabled={delMut.isPending}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            'Delete this alpha? This cannot be undone if the server allows it.',
+                          )
+                        ) {
+                          delMut.mutate()
+                        }
+                      }}
+                    >
+                      {delMut.isPending ? 'Deleting…' : 'Delete alpha'}
+                    </Button>
+                  </Stack>
+                </Tabs.Panel>
 
-                <div
-                  className="stack"
-                  style={{ display: railTab === 'strategy' ? 'block' : 'none' }}
-                  aria-hidden={railTab !== 'strategy'}
-                >
+                <Tabs.Panel value="strategy" pt="md">
                   <ApiErrorAlert error={finstratMut.error} />
                   <FinStratConfigForm
                     config={finstratFromServer(alphaQ.data.finstrat_config)}
@@ -686,56 +669,63 @@ function AlphaStudioWorkspaceInner({ alphaId }: { alphaId: string }) {
                     submitLabel="Update strategy config"
                     onSubmit={(c) => finstratMut.mutate(c)}
                   />
-                </div>
+                </Tabs.Panel>
 
-                <div
-                  className="stack"
-                  style={{ display: railTab === 'config' ? 'block' : 'none' }}
-                  aria-hidden={railTab !== 'config'}
-                >
+                <Tabs.Panel value="config" pt="md">
                   <BacktestConfigPanel
                     alphaId={alphaId}
                     formId={BT_FORM_ID}
                     hideInlineSubmit
                     onEnqueueSuccess={onEnqueueSuccess}
                   />
-                </div>
+                </Tabs.Panel>
 
-                {railTab === 'console' && (
-                  <div className="studio-console">
-                    <p className="muted small" style={{ marginTop: 0 }}>
-                      Live worker lines refresh while the job runs; status lines always reflect the
-                      latest poll.
-                    </p>
-                    <pre className="studio-console-pre mono tabular-nums">{consoleText}</pre>
+                <Tabs.Panel value="console" pt="md">
+                  <Stack gap="sm">
+                    <Text c="dimmed" size="xs">
+                      Live worker lines refresh while the job runs; status lines always reflect the latest
+                      poll.
+                    </Text>
+                    <ScrollArea h={360}>
+                      <Code block ff="monospace" fz="xs" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                        {consoleText}
+                      </Code>
+                    </ScrollArea>
                     <ApiErrorAlert error={logsQ.error} />
-                  </div>
-                )}
-                {railTab === 'results' && (
-                  <div className="studio-results-tab stack">
+                  </Stack>
+                </Tabs.Panel>
+
+                <Tabs.Panel value="results" pt="md">
+                  <Stack gap="sm">
                     <ApiErrorAlert error={resultQ.error} />
                     {job?.status !== 'succeeded' && (
-                      <p className="muted">Run a backtest to completion to see the tearsheet.</p>
+                      <Text c="dimmed" size="sm">
+                        Run a backtest to completion to see the tearsheet.
+                      </Text>
                     )}
                     {resultQ.data && <BacktestResultCharts data={resultQ.data} />}
-                  </div>
-                )}
-              </div>
+                  </Stack>
+                </Tabs.Panel>
+              </Tabs>
 
-              <div className="studio-sticky-run row">
-                <button type="submit" form={BT_FORM_ID} className="btn btn-primary">
+              <Group mt="md" justify="flex-start" wrap="wrap">
+                <Button type="submit" form={BT_FORM_ID} color="yellow">
                   Run backtest
-                </button>
+                </Button>
                 {activeJobId && (
-                  <Link className="btn" to={`/backtests/${encodeURIComponent(activeJobId)}`}>
+                  <Button
+                    component={Link}
+                    variant="default"
+                    to={`/backtests/${encodeURIComponent(activeJobId)}`}
+                  >
                     Open job page
-                  </Link>
+                  </Button>
                 )}
-              </div>
-            </section>
-          </div>
-        </>
+              </Group>
+            </Paper>
+          </SimpleGrid>
+        </Stack>
       )}
-    </div>
+    </PageScaffold>
   )
 }

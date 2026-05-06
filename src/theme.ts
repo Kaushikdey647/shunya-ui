@@ -1,4 +1,5 @@
-const STORAGE_KEY = 'shunya-theme'
+/** Shared with Mantine `localStorageColorSchemeManager` for one source of truth. */
+export const SHUNYA_THEME_STORAGE_KEY = 'shunya-theme'
 
 export type Theme = 'light' | 'dark'
 
@@ -8,7 +9,7 @@ function systemPrefersDark(): boolean {
 
 export function getStoredTheme(): Theme | null {
   try {
-    const v = localStorage.getItem(STORAGE_KEY)
+    const v = localStorage.getItem(SHUNYA_THEME_STORAGE_KEY)
     if (v === 'light' || v === 'dark') return v
   } catch {
     /* ignore */
@@ -23,7 +24,7 @@ export function resolveInitialTheme(): Theme {
 export function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme
   try {
-    localStorage.setItem(STORAGE_KEY, theme)
+    localStorage.setItem(SHUNYA_THEME_STORAGE_KEY, theme)
   } catch {
     /* ignore */
   }

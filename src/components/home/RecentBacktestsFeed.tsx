@@ -1,7 +1,9 @@
+import { Badge, Card, Stack, Table, Text, Title } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { listBacktests } from '../../api/endpoints'
 import type { BacktestJobOut } from '../../api/types'
+import { useMantineTableDensity } from '../../hooks/useMantineTableDensity'
 import ApiErrorAlert from '../ApiErrorAlert'
 
 function primaryMetric(summary: Record<string, unknown> | null): string {
@@ -13,14 +15,15 @@ function primaryMetric(summary: Record<string, unknown> | null): string {
   return '—'
 }
 
-function statusClass(status: BacktestJobOut['status']): string {
-  if (status === 'succeeded') return 'home-status-ok'
-  if (status === 'failed') return 'home-status-err'
-  return 'home-status-pending'
+function statusBadge(status: BacktestJobOut['status']) {
+  if (status === 'succeeded') return { color: 'green' as const, label: status }
+  if (status === 'failed') return { color: 'red' as const, label: status }
+  return { color: 'gray' as const, label: status }
 }
 
 export default function RecentBacktestsFeed() {
   const navigate = useNavigate()
+  const tableProps = useMantineTableDensity()
   const q = useQuery({
     queryKey: ['backtests', 'home-recent'],
     queryFn: () => listBacktests({ limit: 10, offset: 0 }),
@@ -28,46 +31,65 @@ export default function RecentBacktestsFeed() {
   })
 
   return (
-    <div className="dashboard-chart-panel home-engine-panel">
-      <div className="dashboard-chart-title">Recent backtests</div>
-      <ApiErrorAlert error={q.error} />
-      {q.isLoading && <p className="muted">Loading…</p>}
-      {!q.isLoading && q.data && (
-        <div className="table-wrap home-engine-scroll">
-          <table className="data home-dense-table">
-            <thead>
-              <tr>
-                <th>Alpha</th>
-                <th>Status</th>
-                <th>Metric</th>
-              </tr>
-            </thead>
-            <tbody>
-              {q.data.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="muted">
-                    No runs yet
-                  </td>
-                </tr>
-              ) : (
-                q.data.map((job) => (
-                  <tr
-                    key={job.id}
-                    className="home-click-row"
-                    onClick={() => navigate(`/backtests/${encodeURIComponent(job.id)}`)}
-                  >
-                    <td>{job.alpha_name?.trim() || job.alpha_id}</td>
-                    <td>
-                      <span className={`mono ${statusClass(job.status)}`}>{job.status}</span>
-                    </td>
-                    <td className="mono">{primaryMetric(job.result_summary)}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+    <Card padding="md" radius="md" withBorder>
+      <Stack gap="md">
+        <Title order={5}>Recent backtests</Title>
+        <ApiErrorAlert error={q.error} />
+        {q.isLoading && (
+          <Text c="dimmed" size="sm">
+            Loading…
+          </Text>
+        )}
+        {!q.isLoading && q.data && (
+          <Table.ScrollContainer minWidth={260} mih={120} mah={320}>
+            <Table {...tableProps}>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Alpha</Table.Th>
+                  <Table.Th>Status</Table.Th>
+                  <Table.Th>Metric</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {q.data.length === 0 ? (
+                  <Table.Tr>
+                    <Table.Td colSpan={3}>
+                      <Text c="dimmed" size="sm">
+                        No runs yet
+                      </Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ) : (
+                  q.data.map((job) => {
+                    const b = statusBadge(job.status)
+                    return (
+                      <Table.Tr
+                        key={job.id}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => navigate(`/backtests/${encodeURIComponent(job.id)}`)}
+                      >
+                        <Table.Td>
+                          <Text size="sm">{job.alpha_name?.trim() || job.alpha_id}</Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge variant="light" color={b.color} size="sm">
+                            {b.label}
+                          </Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text ff="monospace" size="sm">
+                            {primaryMetric(job.result_summary)}
+                          </Text>
+                        </Table.Td>
+                      </Table.Tr>
+                    )
+                  })
+                )}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        )}
+      </Stack>
+    </Card>
   )
 }

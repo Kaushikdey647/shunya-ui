@@ -97,13 +97,28 @@ export function monthlyReturnsFromEquityCurve(rows: Record<string, unknown>[]): 
   return { years, months, values, normAbs }
 }
 
-export function heatmapCellColor(pct: number | undefined, normAbs: number): string {
-  if (pct === undefined || Number.isNaN(pct)) return 'var(--surface-hover)'
+export type HeatmapPalette = {
+  success: string
+  error: string
+  surface: string
+  empty: string
+}
+
+export function heatmapCellColor(
+  pct: number | undefined,
+  normAbs: number,
+  palette?: HeatmapPalette,
+): string {
+  const surface = palette?.surface ?? 'var(--surface-panel)'
+  const empty = palette?.empty ?? 'var(--surface-hover)'
+  const success = palette?.success ?? 'var(--success)'
+  const error = palette?.error ?? 'var(--error)'
+  if (pct === undefined || Number.isNaN(pct)) return empty
   const t = normAbs > 0 ? Math.max(-1, Math.min(1, pct / normAbs)) : 0
   if (t >= 0) {
     const pctMix = Math.round((22 + Math.abs(t) * 58) * 100) / 100
-    return `color-mix(in srgb, var(--success) ${pctMix}%, var(--surface-panel))`
+    return `color-mix(in srgb, ${success} ${pctMix}%, ${surface})`
   }
   const pctMix = Math.round((22 + Math.abs(t) * 58) * 100) / 100
-  return `color-mix(in srgb, var(--error) ${pctMix}%, var(--surface-panel))`
+  return `color-mix(in srgb, ${error} ${pctMix}%, ${surface})`
 }

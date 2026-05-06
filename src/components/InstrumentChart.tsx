@@ -8,19 +8,23 @@ import {
   type Time,
   type UTCTimestamp,
 } from 'lightweight-charts'
+import { useMantineColorScheme, useMantineTheme } from '@mantine/core'
 import { useEffect, useRef, useState } from 'react'
 import type { InstrumentTickerNewsItem, OhlcvBar } from '../api/types'
 import { barTimesUtcSeconds, snapNewsToBarTime, timeToUnixSeconds } from '../utils/chartBarTimes'
 
-function chartColors() {
-  const cs = getComputedStyle(document.documentElement)
+function chartColorsFromMantine(
+  theme: ReturnType<typeof useMantineTheme>,
+  colorScheme: string,
+) {
+  const isDark = colorScheme === 'dark'
   return {
-    bg: (cs.getPropertyValue('--chart-bg').trim() || '#131722') as string,
-    text: (cs.getPropertyValue('--text-muted').trim() || '#787b86') as string,
-    grid: (cs.getPropertyValue('--chart-grid').trim() || '#363a45') as string,
-    up: '#089981',
-    down: '#f23645',
-    news: (cs.getPropertyValue('--link').trim() || '#60a5fa') as string,
+    bg: isDark ? String(theme.other.darkPanelBg) : String(theme.white),
+    text: isDark ? theme.colors.dark[2]! : theme.colors.gray[6]!,
+    grid: isDark ? theme.colors.dark[5]! : theme.colors.gray[3]!,
+    up: theme.colors.teal[6]!,
+    down: theme.colors.red[6]!,
+    news: theme.colors.yellow[colorScheme === 'dark' ? 5 : 6]!,
   }
 }
 
@@ -330,6 +334,8 @@ export default function InstrumentChart({
   onCrosshairBarUtc,
   compactNewsTooltip = false,
 }: Props) {
+  const theme = useMantineTheme()
+  const { colorScheme } = useMantineColorScheme()
   const shellRef = useRef<HTMLDivElement>(null)
   const chartPaneRef = useRef<HTMLDivElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
@@ -348,7 +354,7 @@ export default function InstrumentChart({
     const obs = new MutationObserver(() => setThemeTick((n) => n + 1))
     obs.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['data-theme'],
+      attributeFilter: ['data-theme', 'data-mantine-color-scheme'],
     })
     return () => obs.disconnect()
   }, [])
@@ -359,7 +365,7 @@ export default function InstrumentChart({
     const tooltipEl = tooltipRef.current
     if (!pane || !shell || !tooltipEl) return
 
-    const colors = chartColors()
+    const colors = chartColorsFromMantine(theme, colorScheme)
     const chart = createChart(pane, {
       layout: {
         background: { type: ColorType.Solid, color: colors.bg },
@@ -462,7 +468,7 @@ export default function InstrumentChart({
       chart.remove()
       hideTooltip()
     }
-  }, [bars, newsList, themeTick])
+  }, [bars, newsList, theme, colorScheme, themeTick])
 
   return (
     <div ref={shellRef} className="instrument-chart-shell">

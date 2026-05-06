@@ -1,3 +1,15 @@
+import {
+  Accordion,
+  Group,
+  Paper,
+  SimpleGrid,
+  Stack,
+  Text,
+  Title,
+  useMantineColorScheme,
+  useMantineTheme,
+} from '@mantine/core'
+import type { CSSProperties } from 'react'
 import { useMemo } from 'react'
 import {
   Area,
@@ -22,10 +34,10 @@ import {
 } from '../lib/backtestCharts'
 import MonthlyReturnsHeatmap from './MonthlyReturnsHeatmap'
 
-const chartAxisStyle = {
-  fontSize: 11,
-  fill: 'var(--text-muted)',
-  fontVariantNumeric: 'tabular-nums' as const,
+type AxisTick = {
+  fontSize: number
+  fill: string
+  fontVariantNumeric: 'tabular-nums'
 }
 
 function tickDate(ms: number): string {
@@ -44,14 +56,14 @@ function BenchmarkPanel({ benchmark }: { benchmark: Record<string, unknown> }) {
   const err = benchmark.error
   if (err != null && String(err).length > 0) {
     return (
-      <div className="dashboard-chart-panel" style={{ padding: '0.5rem 0' }}>
-        <div className="dashboard-chart-title" style={{ fontSize: '0.85rem' }}>
+      <Stack gap="xs">
+        <Title order={5} size="sm">
           Benchmark
-        </div>
-        <p className="muted" style={{ margin: 0, fontSize: '0.8125rem' }}>
+        </Title>
+        <Text size="sm" c="dimmed">
           {String(err)}
-        </p>
-      </div>
+        </Text>
+      </Stack>
     )
   }
 
@@ -61,91 +73,93 @@ function BenchmarkPanel({ benchmark }: { benchmark: Record<string, unknown> }) {
   const benchTr = benchmark.benchmark_total_return_pct
 
   return (
-    <div className="dashboard-chart-panel" style={{ padding: '0.5rem 0' }}>
-      <div className="dashboard-chart-title" style={{ fontSize: '0.85rem' }}>
+    <Stack gap="xs">
+      <Title order={5} size="sm">
         Benchmark
-      </div>
-      <dl className="row" style={{ flexWrap: 'wrap', gap: '1rem', margin: 0 }}>
+      </Title>
+      <Group gap="xl" wrap="wrap">
         {ticker && (
-          <div>
-            <dt className="muted" style={{ fontSize: '0.72rem' }}>
+          <Stack gap={2}>
+            <Text size="xs" c="dimmed">
               Ticker
-            </dt>
-            <dd className="mono" style={{ margin: 0 }}>
+            </Text>
+            <Text ff="monospace" size="sm">
               {ticker}
-            </dd>
-          </div>
+            </Text>
+          </Stack>
         )}
-        <div>
-          <dt className="muted" style={{ fontSize: '0.72rem' }}>
+        <Stack gap={2}>
+          <Text size="xs" c="dimmed">
             Correlation (vs strategy returns)
-          </dt>
-          <dd className="mono" style={{ margin: 0 }}>
+          </Text>
+          <Text ff="monospace" size="sm">
             {formatMetricNumber(cor, 4)}
-          </dd>
-        </div>
-        <div>
-          <dt className="muted" style={{ fontSize: '0.72rem' }}>
+          </Text>
+        </Stack>
+        <Stack gap={2}>
+          <Text size="xs" c="dimmed">
             Overlap bars
-          </dt>
-          <dd className="mono" style={{ margin: 0 }}>
+          </Text>
+          <Text ff="monospace" size="sm">
             {typeof nOverlap === 'number' && Number.isFinite(nOverlap)
               ? String(nOverlap)
               : '—'}
-          </dd>
-        </div>
-        <div>
-          <dt className="muted" style={{ fontSize: '0.72rem' }}>
+          </Text>
+        </Stack>
+        <Stack gap={2}>
+          <Text size="xs" c="dimmed">
             Benchmark total return %
-          </dt>
-          <dd className="mono" style={{ margin: 0 }}>
+          </Text>
+          <Text ff="monospace" size="sm">
             {typeof benchTr === 'number' && Number.isFinite(benchTr)
               ? `${benchTr.toFixed(2)}%`
               : '—'}
-          </dd>
-        </div>
-      </dl>
-    </div>
+          </Text>
+        </Stack>
+      </Group>
+    </Stack>
   )
-}
-
-const tooltipStyle = {
-  background: 'var(--surface-panel)',
-  border: '1px solid var(--border)',
-  borderRadius: 'var(--radius)',
-  color: 'var(--text)',
-  fontSize: '0.8125rem',
 }
 
 function DrawdownAreaChart({
   points,
   xDomain,
+  axis,
+  gridStroke,
+  tooltip,
+  drawdownStroke,
+  drawdownFill,
 }: {
   points: EquityChartRow[]
   xDomain: [number, number]
+  axis: AxisTick
+  gridStroke: string
+  tooltip: CSSProperties
+  drawdownStroke: string
+  drawdownFill: string
 }) {
   return (
     <AreaChart data={points} margin={{ top: 8, right: 12, bottom: 8, left: 8 }}>
-      <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
+      <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
       <XAxis
         type="number"
         dataKey="t"
         domain={xDomain}
         tickFormatter={tickDate}
-        tick={chartAxisStyle}
+        tick={axis}
         scale="time"
       />
-      <YAxis tick={chartAxisStyle} tickFormatter={(v) => `${v}%`} domain={['dataMin', 0]} />
+      <YAxis tick={axis} tickFormatter={(v) => `${v}%`} domain={['dataMin', 0]} />
       <Tooltip
-        contentStyle={tooltipStyle}
+        contentStyle={tooltip}
         labelFormatter={(ms) => (typeof ms === 'number' ? new Date(ms).toLocaleString() : '')}
       />
       <Area
         type="monotone"
         dataKey="drawdownPct"
         name="Drawdown %"
-        stroke="var(--error)"
-        fill="var(--error-bg)"
+        stroke={drawdownStroke}
+        fill={drawdownFill}
         fillOpacity={0.55}
         isAnimationActive={false}
       />
@@ -159,6 +173,52 @@ function pctLabel(v: unknown, digits: number): string {
 }
 
 export default function BacktestResultCharts({ data }: { data: BacktestResultPayload }) {
+  const theme = useMantineTheme()
+  const { colorScheme } = useMantineColorScheme()
+
+  const muted =
+    colorScheme === 'dark' ? theme.colors.dark[2] : theme.colors.gray[6]
+  const gridStroke =
+    colorScheme === 'dark' ? theme.colors.dark[5] : theme.colors.gray[3]
+  const panelBg =
+    colorScheme === 'dark' ? theme.other.darkPanelBg : theme.white
+  const borderColor =
+    colorScheme === 'dark' ? theme.other.darkBorder : theme.colors.gray[4]
+  const textColor =
+    colorScheme === 'dark' ? theme.colors.dark[0] : theme.colors.dark[9]
+  const accent =
+    theme.colors.yellow[colorScheme === 'dark' ? 5 : 6] ?? theme.colors.yellow[6]
+  const turnoverBar =
+    colorScheme === 'dark' ? theme.colors.dark[5] : theme.colors.gray[3]
+  const turnoverBarStroke =
+    colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[5]
+  const turnoverLine =
+    colorScheme === 'dark' ? theme.colors.dark[3] : theme.colors.gray[7]
+
+  const chartAxisStyle = useMemo(
+    (): AxisTick => ({
+      fontSize: 11,
+      fill: muted,
+      fontVariantNumeric: 'tabular-nums',
+    }),
+    [muted],
+  )
+
+  const tooltipStyle = useMemo(
+    (): CSSProperties => ({
+      background: panelBg,
+      border: `1px solid ${borderColor}`,
+      borderRadius: theme.defaultRadius,
+      color: textColor,
+      fontSize: '0.8125rem',
+    }),
+    [borderColor, panelBg, textColor, theme.defaultRadius],
+  )
+
+  const ddStroke = theme.colors.red[6]!
+  const ddFill =
+    colorScheme === 'dark' ? theme.colors.red[9]! : theme.colors.red[1]!
+
   const equityPts = useMemo(() => adaptEquityCurve(data.equity_curve), [data.equity_curve])
   const turnoverPts = useMemo(
     () => adaptTurnoverHistory(data.turnover_history, data.equity_curve),
@@ -173,38 +233,44 @@ export default function BacktestResultCharts({ data }: { data: BacktestResultPay
   const m = data.metrics
   const hasBenchmark = data.benchmark != null && typeof data.benchmark === 'object'
 
-  const hero = (
-    <div className="tearsheet-hero-row">
-      <div className="tearsheet-hero-metric">
-        <div className="tearsheet-hero-label">CAGR</div>
-        <div className="tearsheet-hero-value">{pctLabel(m.cagr_pct, 2)}</div>
-      </div>
-      <div className="tearsheet-hero-metric">
-        <div className="tearsheet-hero-label">Sharpe</div>
-        <div className="tearsheet-hero-value">{formatMetricNumber(m.sharpe_ratio, 3)}</div>
-      </div>
-      <div className="tearsheet-hero-metric">
-        <div className="tearsheet-hero-label">Max drawdown</div>
-        <div className="tearsheet-hero-value">{pctLabel(m.max_drawdown_pct, 2)}</div>
-      </div>
-      <div className="tearsheet-hero-metric">
-        <div className="tearsheet-hero-label">Win rate</div>
-        <div className="tearsheet-hero-value">{pctLabel(m.win_rate_pct, 1)}</div>
-      </div>
-    </div>
-  )
-
   return (
-    <div className="stack" style={{ gap: '1.25rem' }}>
-      {hero}
+    <Stack gap="lg">
+      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
+        <Paper withBorder p="sm" radius="md">
+          <Text size="xs" c="dimmed">
+            CAGR
+          </Text>
+          <Text fw={700}>{pctLabel(m.cagr_pct, 2)}</Text>
+        </Paper>
+        <Paper withBorder p="sm" radius="md">
+          <Text size="xs" c="dimmed">
+            Sharpe
+          </Text>
+          <Text fw={700}>{formatMetricNumber(m.sharpe_ratio, 3)}</Text>
+        </Paper>
+        <Paper withBorder p="sm" radius="md">
+          <Text size="xs" c="dimmed">
+            Max drawdown
+          </Text>
+          <Text fw={700}>{pctLabel(m.max_drawdown_pct, 2)}</Text>
+        </Paper>
+        <Paper withBorder p="sm" radius="md">
+          <Text size="xs" c="dimmed">
+            Win rate
+          </Text>
+          <Text fw={700}>{pctLabel(m.win_rate_pct, 1)}</Text>
+        </Paper>
+      </SimpleGrid>
 
       {equityPts.length > 0 && xDomain && (
-        <div className="table-wrap dashboard-chart-panel">
-          <div className="dashboard-chart-title">Performance</div>
+        <Paper withBorder p="md" radius="md">
+          <Title order={4} size="h5" mb="sm">
+            Performance
+          </Title>
           <div style={{ width: '100%', height: 280 }}>
             <ResponsiveContainer>
               <LineChart data={equityPts} margin={{ top: 8, right: 12, bottom: 8, left: 8 }}>
-                <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
+                <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
                 <XAxis
                   type="number"
                   dataKey="t"
@@ -239,7 +305,7 @@ export default function BacktestResultCharts({ data }: { data: BacktestResultPay
                   type="monotone"
                   dataKey="equity"
                   name="Equity"
-                  stroke="var(--accent)"
+                  stroke={accent}
                   strokeWidth={2}
                   dot={false}
                   isAnimationActive={false}
@@ -249,109 +315,123 @@ export default function BacktestResultCharts({ data }: { data: BacktestResultPay
           </div>
           <div style={{ width: '100%', height: 160, marginTop: '0.25rem' }}>
             <ResponsiveContainer>
-              <DrawdownAreaChart points={equityPts} xDomain={xDomain} />
+              <DrawdownAreaChart
+                points={equityPts}
+                xDomain={xDomain}
+                axis={chartAxisStyle}
+                gridStroke={gridStroke}
+                tooltip={tooltipStyle}
+                drawdownStroke={ddStroke}
+                drawdownFill={ddFill}
+              />
             </ResponsiveContainer>
           </div>
-        </div>
+        </Paper>
       )}
 
       {equityPts.length > 0 && <MonthlyReturnsHeatmap equityCurve={data.equity_curve} />}
 
       {(hasBenchmark || turnoverPts.length > 0) && (
-        <details className="advanced">
-          <summary>Benchmark &amp; turnover</summary>
-          <div className="stack" style={{ gap: '1rem', marginTop: '0.75rem' }}>
-            {hasBenchmark && (
-              <BenchmarkPanel benchmark={data.benchmark as Record<string, unknown>} />
-            )}
-            {turnoverPts.length > 0 && (
-              <div className="dashboard-chart-panel">
-                <div className="dashboard-chart-title" style={{ fontSize: '0.85rem' }}>
-                  Turnover (USD per rebalance; % of equity)
-                </div>
-                <div style={{ width: '100%', height: 280 }}>
-                  <ResponsiveContainer>
-                    <ComposedChart data={turnoverPts} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
-                      <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
-                      <XAxis
-                        type="number"
-                        dataKey="t"
-                        domain={['dataMin', 'dataMax']}
-                        tickFormatter={tickDate}
-                        tick={chartAxisStyle}
-                        scale="time"
-                      />
-                      <YAxis
-                        yAxisId="usd"
-                        orientation="left"
-                        tick={chartAxisStyle}
-                        tickFormatter={(v) =>
-                          typeof v === 'number' && Math.abs(v) >= 1e6
-                            ? `${(v / 1e6).toFixed(1)}M`
-                            : typeof v === 'number' && Math.abs(v) >= 1e3
-                              ? `${(v / 1e3).toFixed(0)}k`
-                              : String(v)
-                        }
-                        label={{
-                          value: 'USD',
-                          angle: -90,
-                          position: 'insideLeft',
-                          fill: 'var(--text-muted)',
-                          fontSize: 11,
-                        }}
-                      />
-                      <YAxis
-                        yAxisId="pct"
-                        orientation="right"
-                        tick={chartAxisStyle}
-                        tickFormatter={(v) => `${v}%`}
-                        label={{
-                          value: '% equity',
-                          angle: 90,
-                          position: 'insideRight',
-                          fill: 'var(--text-muted)',
-                          fontSize: 11,
-                        }}
-                      />
-                      <Tooltip
-                        contentStyle={tooltipStyle}
-                        labelFormatter={(ms) =>
-                          typeof ms === 'number' ? new Date(ms).toLocaleString() : ''
-                        }
-                      />
-                      <Legend />
-                      <Bar
-                        yAxisId="usd"
-                        dataKey="turnoverUsd"
-                        name="Turnover USD"
-                        fill="var(--surface-hover)"
-                        stroke="var(--border-strong)"
-                        radius={[2, 2, 0, 0]}
-                        isAnimationActive={false}
-                      />
-                      <Line
-                        yAxisId="pct"
-                        type="monotone"
-                        dataKey="turnoverPct"
-                        name="Turnover % equity"
-                        stroke="var(--border-strong)"
-                        strokeWidth={1.5}
-                        dot={false}
-                        connectNulls
-                        isAnimationActive={false}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-          </div>
-        </details>
+        <Accordion variant="contained">
+          <Accordion.Item value="bench-turnover">
+            <Accordion.Control>Benchmark &amp; turnover</Accordion.Control>
+            <Accordion.Panel>
+              <Stack gap="md" mt="xs">
+                {hasBenchmark && (
+                  <BenchmarkPanel benchmark={data.benchmark as Record<string, unknown>} />
+                )}
+                {turnoverPts.length > 0 && (
+                  <Stack gap="xs">
+                    <Title order={5} size="sm">
+                      Turnover (USD per rebalance; % of equity)
+                    </Title>
+                    <div style={{ width: '100%', height: 280 }}>
+                      <ResponsiveContainer>
+                        <ComposedChart data={turnoverPts} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
+                          <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
+                          <XAxis
+                            type="number"
+                            dataKey="t"
+                            domain={['dataMin', 'dataMax']}
+                            tickFormatter={tickDate}
+                            tick={chartAxisStyle}
+                            scale="time"
+                          />
+                          <YAxis
+                            yAxisId="usd"
+                            orientation="left"
+                            tick={chartAxisStyle}
+                            tickFormatter={(v) =>
+                              typeof v === 'number' && Math.abs(v) >= 1e6
+                                ? `${(v / 1e6).toFixed(1)}M`
+                                : typeof v === 'number' && Math.abs(v) >= 1e3
+                                  ? `${(v / 1e3).toFixed(0)}k`
+                                  : String(v)
+                            }
+                            label={{
+                              value: 'USD',
+                              angle: -90,
+                              position: 'insideLeft',
+                              fill: muted,
+                              fontSize: 11,
+                            }}
+                          />
+                          <YAxis
+                            yAxisId="pct"
+                            orientation="right"
+                            tick={chartAxisStyle}
+                            tickFormatter={(v) => `${v}%`}
+                            label={{
+                              value: '% equity',
+                              angle: 90,
+                              position: 'insideRight',
+                              fill: muted,
+                              fontSize: 11,
+                            }}
+                          />
+                          <Tooltip
+                            contentStyle={tooltipStyle}
+                            labelFormatter={(ms) =>
+                              typeof ms === 'number' ? new Date(ms).toLocaleString() : ''
+                            }
+                          />
+                          <Legend />
+                          <Bar
+                            yAxisId="usd"
+                            dataKey="turnoverUsd"
+                            name="Turnover USD"
+                            fill={turnoverBar}
+                            stroke={turnoverBarStroke}
+                            radius={[2, 2, 0, 0]}
+                            isAnimationActive={false}
+                          />
+                          <Line
+                            yAxisId="pct"
+                            type="monotone"
+                            dataKey="turnoverPct"
+                            name="Turnover % equity"
+                            stroke={turnoverLine}
+                            strokeWidth={1.5}
+                            dot={false}
+                            connectNulls
+                            isAnimationActive={false}
+                          />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Stack>
+                )}
+              </Stack>
+            </Accordion.Panel>
+          </Accordion.Item>
+        </Accordion>
       )}
 
       {equityPts.length === 0 && turnoverPts.length === 0 && (
-        <p className="muted">No equity or turnover series to chart.</p>
+        <Text c="dimmed" size="sm">
+          No equity or turnover series to chart.
+        </Text>
       )}
-    </div>
+    </Stack>
   )
 }

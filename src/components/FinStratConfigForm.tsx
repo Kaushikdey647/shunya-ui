@@ -1,5 +1,14 @@
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Select,
+  Stack,
+  TextInput,
+  Title,
+} from '@mantine/core'
+import { Controller, useForm } from 'react-hook-form'
 import { useEffect, useRef } from 'react'
-import { useForm } from 'react-hook-form'
 import { defaultFinStratConfig } from '../api/defaultConfigs'
 import type { FinStratConfig } from '../api/types'
 
@@ -98,14 +107,11 @@ function parseFormValues(v: FinStratFormValues):
 
 type Props = {
   config: FinStratConfig
-  /** Change when the server sends new config to reset the form. */
   resetKey?: string
   onSubmit: (c: FinStratConfig) => void
-  /** Fires when the form values (debounced) parse to a valid config. */
   onValidChange?: (c: FinStratConfig) => void
   isPending: boolean
   submitLabel: string
-  /** Shown on validation error on submit. */
   formError?: string | null
 }
 
@@ -132,10 +138,9 @@ export default function FinStratConfigForm({
     }
   }, [resetKey, form, config, onValidChange])
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch()
   const decayMode = form.watch('decay_mode')
-
   const watched = form.watch()
+
   useEffect(() => {
     if (!onValidChange) return
     if (debRef.current) clearTimeout(debRef.current)
@@ -148,9 +153,10 @@ export default function FinStratConfigForm({
     }
   }, [watched, onValidChange])
 
+  const rootErr = formError ?? form.formState.errors.root?.message
+
   return (
     <form
-      className="form-grid"
       onSubmit={form.handleSubmit((vals) => {
         const p = parseFormValues(vals)
         if (!p.ok) {
@@ -161,78 +167,111 @@ export default function FinStratConfigForm({
         form.clearErrors('root')
       })}
     >
-      <h3 className="finstrat-form-title">Strategy config (finstrat)</h3>
-      {(formError || form.formState.errors.root) && (
-        <span className="alert alert-error">
-          {formError ?? (form.formState.errors.root as { message?: string })?.message}
-        </span>
-      )}
-      <label>
-        Decay mode
-        <select {...form.register('decay_mode')}>
-          <option value="ema">ema (EMA coefficient)</option>
-          <option value="linear">linear (fixed window)</option>
-        </select>
-      </label>
-      {decayMode === 'ema' ? (
-        <label>
-          Decay (EMA coefficient in [0, 1))
-          <input type="number" step="any" {...form.register('decay')} />
-        </label>
-      ) : (
-        <label>
-          Decay window (bars, integer ≥ 1)
-          <input type="number" step="1" {...form.register('decay_window')} />
-        </label>
-      )}
-      <label>
-        Signal delay
-        <input type="number" step="1" {...form.register('signal_delay')} />
-      </label>
-      <label className="row" style={{ alignItems: 'center', gap: '0.5rem' }}>
-        <input type="checkbox" {...form.register('intraday_session_isolated_lag')} />
-        Intraday session isolated lag
-      </label>
-      <label>
-        NaN policy
-        <select {...form.register('nan_policy')}>
-          <option value="strict">strict</option>
-          <option value="zero_fill">zero_fill</option>
-        </select>
-      </label>
-      <label>
-        Temporal mode
-        <select {...form.register('temporal_mode')}>
-          <option value="bar_step">bar_step</option>
-          <option value="elapsed_trading_time">elapsed_trading_time</option>
-        </select>
-      </label>
-      <label>
-        Neutralization
-        <select {...form.register('neutralization')}>
-          <option value="none">None</option>
-          <option value="market">Market</option>
-          <option value="sector">Sector</option>
-          <option value="industry">Industry</option>
-        </select>
-      </label>
-      <label>
-        Truncation
-        <input type="number" step="any" {...form.register('truncation')} />
-      </label>
-      <label>
-        Max single weight (0–1, empty = none)
-        <input type="text" {...form.register('max_single_weight_str')} />
-      </label>
-      <label>
-        Panel columns (comma-separated, optional)
-        <input type="text" {...form.register('panel_columns_str')} />
-      </label>
-      <div className="row">
-        <button type="submit" className="btn btn-primary" disabled={isPending}>
+      <Stack gap="md">
+        <Title order={4}>Strategy config (finstrat)</Title>
+        {rootErr && (
+          <Alert color="red" variant="light">
+            {rootErr}
+          </Alert>
+        )}
+        <Controller
+          name="decay_mode"
+          control={form.control}
+          render={({ field }) => (
+            <Select
+              label="Decay mode"
+              data={[
+                { value: 'ema', label: 'ema (EMA coefficient)' },
+                { value: 'linear', label: 'linear (fixed window)' },
+              ]}
+              {...field}
+            />
+          )}
+        />
+        {decayMode === 'ema' ? (
+          <TextInput
+            label="Decay (EMA coefficient in [0, 1))"
+            type="number"
+            step="any"
+            {...form.register('decay')}
+          />
+        ) : (
+          <TextInput
+            label="Decay window (bars, integer ≥ 1)"
+            type="number"
+            step={1}
+            {...form.register('decay_window')}
+          />
+        )}
+        <TextInput label="Signal delay" type="number" step={1} {...form.register('signal_delay')} />
+        <Controller
+          name="intraday_session_isolated_lag"
+          control={form.control}
+          render={({ field }) => (
+            <Checkbox
+              label="Intraday session isolated lag"
+              checked={field.value}
+              onChange={(e) => field.onChange(e.currentTarget.checked)}
+            />
+          )}
+        />
+        <Controller
+          name="nan_policy"
+          control={form.control}
+          render={({ field }) => (
+            <Select
+              label="NaN policy"
+              data={[
+                { value: 'strict', label: 'strict' },
+                { value: 'zero_fill', label: 'zero_fill' },
+              ]}
+              {...field}
+            />
+          )}
+        />
+        <Controller
+          name="temporal_mode"
+          control={form.control}
+          render={({ field }) => (
+            <Select
+              label="Temporal mode"
+              data={[
+                { value: 'bar_step', label: 'bar_step' },
+                { value: 'elapsed_trading_time', label: 'elapsed_trading_time' },
+              ]}
+              {...field}
+            />
+          )}
+        />
+        <Controller
+          name="neutralization"
+          control={form.control}
+          render={({ field }) => (
+            <Select
+              label="Neutralization"
+              data={[
+                { value: 'none', label: 'None' },
+                { value: 'market', label: 'Market' },
+                { value: 'sector', label: 'Sector' },
+                { value: 'industry', label: 'Industry' },
+              ]}
+              {...field}
+            />
+          )}
+        />
+        <TextInput label="Truncation" type="number" step="any" {...form.register('truncation')} />
+        <TextInput
+          label="Max single weight (0–1, empty = none)"
+          {...form.register('max_single_weight_str')}
+        />
+        <TextInput
+          label="Panel columns (comma-separated, optional)"
+          {...form.register('panel_columns_str')}
+        />
+        <Button type="submit" color="yellow" disabled={isPending}>
           {isPending ? 'Saving…' : submitLabel}
-        </button>
-      </div>
+        </Button>
+      </Stack>
     </form>
   )
 }
