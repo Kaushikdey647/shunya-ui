@@ -15,9 +15,10 @@ builder = "RAILPACK"
 buildCommand = "npm run build"
 
 [deploy]
-# Shell ensures $PORT is expanded; Railway healthchecks use the same port.
-# Probe /healthz (static file) — always 200, no SPA or 304 edge cases.
-startCommand = "sh -c 'exec npm run preview -- --host 0.0.0.0 --port \"$PORT\"'"
+# Do not use `vite preview` here: Vite is a devDependency and Railpack's `npm ci`
+# omits dev deps in production — nothing listens on $PORT and healthchecks fail.
+# `serve` is a runtime dependency; `-s` enables SPA fallback (static files like /healthz win).
+startCommand = "npm run start"
 healthcheckPath = "/healthz"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
