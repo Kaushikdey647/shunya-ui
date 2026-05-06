@@ -25,10 +25,10 @@ const warmDark: MantineColorsTuple = [
   '#a9a39d',
   '#8f8983',
   '#6f6a65',
-  '#514d49',
-  '#3a3633',
-  '#252321',
-  '#141312',
+  '#4a4744',
+  '#222120',
+  '#0c0c0b',
+  '#050504',
 ]
 
 export const shunyaMantineTheme = createTheme({
@@ -47,11 +47,11 @@ export const shunyaMantineTheme = createTheme({
     to: 'yellow.7',
     deg: 120,
   },
-  /** Softer page chrome in dark mode (warm black). */
+  /** Near-black page chrome in dark mode (slight warm bias, not blue-gray). */
   other: {
-    darkPageBg: '#141312',
-    darkPanelBg: '#1c1a18',
-    darkBorder: '#3a3633',
+    darkPageBg: '#050504',
+    darkPanelBg: '#080807',
+    darkBorder: '#2a2826',
   },
   components: {
     Button: {
@@ -66,9 +66,15 @@ export const shunyaMantineTheme = createTheme({
     },
     Card: {
       defaultProps: {
-        withBorder: true,
+        withBorder: false,
         padding: 'md',
         radius: 'md',
+      },
+    },
+    SegmentedControl: {
+      defaultProps: {
+        withItemsBorders: false,
+        color: 'dark.7',
       },
     },
     Table: {

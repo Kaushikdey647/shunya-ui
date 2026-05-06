@@ -15,6 +15,21 @@ body {
   margin: 0;
 }
 
+/* Mantine 9 theme `components.AppShell.styles` does not receive colorScheme context; use html attr instead. */
+html[data-mantine-color-scheme='dark'] {
+  background-color: #050504;
+}
+html[data-mantine-color-scheme='dark'] body,
+html[data-mantine-color-scheme='dark'] #root {
+  background-color: #050504;
+}
+
+/* Card/Paper `withBorder` — drop visible stroke in dark mode (Mantine uses --paper-border-color from dark-4). */
+html[data-mantine-color-scheme='dark'] [data-with-border] {
+  border: none !important;
+  box-shadow: none !important;
+}
+
 p {
   margin: 0;
 }

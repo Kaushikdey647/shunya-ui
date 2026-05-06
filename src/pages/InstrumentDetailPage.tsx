@@ -29,6 +29,7 @@ import InstrumentContextFeed from '../components/InstrumentContextFeed'
 import InstrumentFinancialsPanel from '../components/instrument/InstrumentFinancialsPanel'
 import InstrumentHoldersPanel from '../components/instrument/InstrumentHoldersPanel'
 import InstrumentOptionsChainPanel from '../components/instrument/InstrumentOptionsChainPanel'
+import InstrumentYfinanceResearchTab from '../components/instrument/InstrumentYfinanceResearchTab'
 import PageScaffold from '../components/PageScaffold'
 import { barTimesUtcSeconds, snapCrosshairToBarTime } from '../utils/chartBarTimes'
 
@@ -361,6 +362,11 @@ export default function InstrumentDetailPage() {
   const showFinancials = features?.financials ?? false
   const showHolders = features?.holders ?? false
   const showOptions = (features?.options_chain ?? false) && overview.data?.instrument_kind !== 'option'
+  const showResearch =
+    overview.data != null &&
+    (overview.data.instrument_kind === 'equity' ||
+      overview.data.instrument_kind === 'etf' ||
+      overview.data.instrument_kind === 'mutualfund')
 
   if (!symbol) {
     return (
@@ -423,6 +429,7 @@ export default function InstrumentDetailPage() {
           <Tabs.Tab value="chart">Chart & news</Tabs.Tab>
           {showFinancials && <Tabs.Tab value="financials">Financials</Tabs.Tab>}
           {showHolders && <Tabs.Tab value="holders">Holders</Tabs.Tab>}
+          {showResearch && <Tabs.Tab value="research">Research</Tabs.Tab>}
           {showOptions && <Tabs.Tab value="options">Options</Tabs.Tab>}
         </Tabs.List>
 
@@ -505,6 +512,12 @@ export default function InstrumentDetailPage() {
         {showHolders && (
           <Tabs.Panel value="holders" pt="lg">
             <InstrumentHoldersPanel symbol={symbol} enabled={mainTab === 'holders'} />
+          </Tabs.Panel>
+        )}
+
+        {showResearch && (
+          <Tabs.Panel value="research" pt="lg">
+            <InstrumentYfinanceResearchTab symbol={symbol} enabled={mainTab === 'research'} />
           </Tabs.Panel>
         )}
 

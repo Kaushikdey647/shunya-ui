@@ -9,6 +9,7 @@ import './index.css'
 import App from './App.tsx'
 import { initTableDensity } from './density'
 import LegacyThemeSync from './components/LegacyThemeSync'
+import { shunyaCssVariablesResolver } from './mantine/cssVariablesResolver'
 import { shunyaMantineTheme } from './mantine/theme'
 import { SHUNYA_THEME_STORAGE_KEY, resolveInitialTheme } from './theme'
 
@@ -31,6 +32,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <MantineProvider
       theme={shunyaMantineTheme}
+      cssVariablesResolver={shunyaCssVariablesResolver}
       defaultColorScheme={resolveInitialTheme()}
       colorSchemeManager={colorSchemeManager}
     >

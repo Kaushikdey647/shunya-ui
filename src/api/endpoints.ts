@@ -16,12 +16,17 @@ import type {
   InstrumentFinancialStatementResponse,
   InstrumentHoldersResponse,
   InstrumentOhlcvResponse,
+  InstrumentAnalystPriceTargetsResponse,
+  InstrumentIvHeatmapResponse,
+  InstrumentJsonBlobResponse,
   InstrumentOptionChainResponse,
   InstrumentOptionExpirationsResponse,
   InstrumentOverviewResponse,
   InstrumentSearchResponse,
   InstrumentStatement,
   InstrumentTickerNewsResponse,
+  InstrumentValuationMeasuresPayload,
+  InstrumentYfinanceTableResponse,
   EquityIndexOut,
   MarketHeadlinesResponse,
   MarketMoversResponse,
@@ -269,6 +274,181 @@ export async function getInstrumentOptionChain(
   const sp = new URLSearchParams({ expiry })
   return apiFetch<InstrumentOptionChainResponse>(
     `/instruments/${encodeURIComponent(symbol)}/options/chain?${sp.toString()}`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentOptionIvHeatmap(
+  symbol: string,
+  params?: { maxExpirations?: number },
+): Promise<InstrumentIvHeatmapResponse> {
+  const sp = new URLSearchParams()
+  if (params?.maxExpirations != null) sp.set('max_expirations', String(params.maxExpirations))
+  const q = sp.toString()
+  return apiFetch<InstrumentIvHeatmapResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/options/iv-heatmap${q ? `?${q}` : ''}`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentValuationMeasures(
+  symbol: string,
+): Promise<InstrumentValuationMeasuresPayload> {
+  return apiFetch<InstrumentValuationMeasuresPayload>(
+    `/instruments/${encodeURIComponent(symbol)}/valuation-measures`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentAnalystPriceTargets(
+  symbol: string,
+): Promise<InstrumentAnalystPriceTargetsResponse> {
+  return apiFetch<InstrumentAnalystPriceTargetsResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/analyst/price-targets`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentEarningsEstimate(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/analyst/earnings-estimate`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentRevenueEstimate(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/analyst/revenue-estimate`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentEarningsHistory(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/analyst/earnings-history`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentEpsTrend(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/analyst/eps-trend`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentEpsRevisions(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/analyst/eps-revisions`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentGrowthEstimates(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/analyst/growth-estimates`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentRecommendations(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/analyst/recommendations`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentRecommendationsSummary(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/analyst/recommendations-summary`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentUpgradesDowngrades(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/analyst/upgrades-downgrades`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentSustainability(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/sustainability`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentInsiderPurchases(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/insider/purchases`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentInsiderTransactions(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/insider/transactions`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentInsiderRosterHolders(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/insider/roster-holders`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentMajorHoldersYf(
+  symbol: string,
+): Promise<InstrumentYfinanceTableResponse> {
+  return apiFetch<InstrumentYfinanceTableResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/insider/major-holders`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentCalendar(
+  symbol: string,
+): Promise<InstrumentJsonBlobResponse> {
+  return apiFetch<InstrumentJsonBlobResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/calendar`,
+    { method: 'GET' },
+  )
+}
+
+export async function getInstrumentSecFilings(
+  symbol: string,
+): Promise<InstrumentJsonBlobResponse> {
+  return apiFetch<InstrumentJsonBlobResponse>(
+    `/instruments/${encodeURIComponent(symbol)}/sec-filings`,
     { method: 'GET' },
   )
 }

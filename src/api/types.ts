@@ -542,3 +542,47 @@ export interface InstrumentOptionChainResponse {
   puts: InstrumentOptionLegRow[]
   available: boolean
 }
+
+export interface InstrumentIvHeatmapResponse {
+  symbol: string
+  expirations: string[]
+  strikes: number[]
+  iv_calls: (number | null)[][]
+  iv_puts: (number | null)[][]
+  available: boolean
+}
+
+/** Cached ``get_valuation_measures()``-style table (columns + records). */
+export interface InstrumentValuationMeasuresPayload {
+  symbol: string
+  available: boolean
+  columns: string[]
+  records: Record<string, unknown>[]
+}
+
+export interface InstrumentYfinanceTablePayload {
+  columns: string[]
+  records: Record<string, unknown>[]
+}
+
+export interface InstrumentYfinanceTableResponse {
+  symbol: string
+  available: boolean
+  data: InstrumentYfinanceTablePayload
+}
+
+export interface InstrumentAnalystPriceTargetsResponse {
+  symbol: string
+  available: boolean
+  current?: number | null
+  low?: number | null
+  high?: number | null
+  mean?: number | null
+  median?: number | null
+}
+
+export interface InstrumentJsonBlobResponse {
+  symbol: string
+  available: boolean
+  data: Record<string, unknown>
+}
