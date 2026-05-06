@@ -1,6 +1,7 @@
 import { Alert, Card, Stack, Table, Text, Title } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { getHealth } from '../../api/endpoints'
+import { isHealthResponse } from '../../api/types'
 import { useMantineTableDensity } from '../../hooks/useMantineTableDensity'
 import ApiErrorAlert from '../ApiErrorAlert'
 
@@ -22,7 +23,18 @@ export default function HealthMiniCard() {
             Checking…
           </Text>
         )}
-        {q.data && (
+        {q.data && !isHealthResponse(q.data) && (
+          <Alert color="red" variant="light" title="Unexpected health response">
+            <Text size="sm">
+              GET /health did not return the expected JSON. Confirm{' '}
+              <Text span ff="monospace">
+                VITE_API_BASE
+              </Text>{' '}
+              points at your FastAPI service (public URL), not the SPA or /healthz plaintext.
+            </Text>
+          </Alert>
+        )}
+        {q.data && isHealthResponse(q.data) && (
           <Stack gap="sm">
             <Alert
               color={

@@ -250,6 +250,24 @@ export interface HealthResponse {
   yfinance: HealthCheckItem
 }
 
+function isHealthCheckItem(v: unknown): v is HealthCheckItem {
+  if (v === null || typeof v !== 'object') return false
+  const h = v as Record<string, unknown>
+  return (
+    (h.status === 'ok' || h.status === 'error') &&
+    typeof h.latency_ms === 'number'
+  )
+}
+
+/** True when the JSON body matches {@link HealthResponse} (avoids crashes on HTML/plaintext/wrong API). */
+export function isHealthResponse(x: unknown): x is HealthResponse {
+  if (x === null || typeof x !== 'object') return false
+  const o = x as Record<string, unknown>
+  const s = o.status
+  if (s !== 'ok' && s !== 'degraded' && s !== 'error') return false
+  return isHealthCheckItem(o.backend) && isHealthCheckItem(o.database) && isHealthCheckItem(o.yfinance)
+}
+
 export type MoversKind = 'gainers' | 'losers' | 'active'
 
 export interface MarketSnapshotRow {

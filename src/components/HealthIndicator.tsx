@@ -1,7 +1,7 @@
 import { Box } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { getHealth } from '../api/endpoints'
-import type { HealthResponse } from '../api/types'
+import { isHealthResponse, type HealthResponse } from '../api/types'
 
 function healthTitle(data: HealthResponse) {
   return `API ${data.status} · backend ${data.backend.status} ${data.backend.latency_ms}ms · db ${data.database.status} ${data.database.latency_ms}ms · yfinance ${data.yfinance.status} ${data.yfinance.latency_ms}ms`
@@ -30,8 +30,14 @@ export default function HealthIndicator() {
   if (q.isLoading) {
     return <Dot color="var(--mantine-color-gray-5)" title="API status" label="Checking API" />
   }
-  if (q.isError || !q.data) {
-    return <Dot color="var(--mantine-color-red-6)" title="API unreachable" label="API error" />
+  if (q.isError || !q.data || !isHealthResponse(q.data)) {
+    return (
+      <Dot
+        color="var(--mantine-color-red-6)"
+        title={q.isError || !q.data ? 'API unreachable' : 'GET /health returned an unexpected body — check VITE_API_BASE'}
+        label="API error"
+      />
+    )
   }
   const { data } = q
   if (data.status === 'error') {
